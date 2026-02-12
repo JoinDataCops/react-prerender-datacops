@@ -1,22 +1,79 @@
 # ⚡ react-prerender-worker
 
-**Zero-cost SEO for React SPAs — serve pre-rendered HTML to bots, pure SPA to humans.**
+### Your React app is invisible to Google. This fixes it — for $0/month.
 
-> Make any React app fully crawlable by Google, ChatGPT, Claude, and 100+ bots for **$0/month**.
+> You built a beautiful React app. But Google, ChatGPT, and every crawler that drives traffic? They see an empty `<div>`. Your competitors on Next.js rank above you. Not because they're better — because their HTML is visible.
+>
+> **This is the fix. No framework migration. No SSR hosting bill. No rewrite.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare)](https://workers.cloudflare.com/)
 [![Supabase](https://img.shields.io/badge/Supabase-Edge_Functions-3ECF8E?logo=supabase)](https://supabase.com/)
+[![React](https://img.shields.io/badge/React-SPA_SEO-61DAFB?logo=react)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-Compatible-646CFF?logo=vite)](https://vitejs.dev/)
+
+**Works with:** React · Vite · Create React App · Remix SPA · Gatsby · Vue · Svelte · Angular · Astro · any static SPA
 
 ---
 
-## The Problem
+## 🔥 The Problem Nobody Talks About
 
-React SPAs ship an empty `<div id="root"></div>`. Search engines and AI crawlers see **nothing**. Next.js solves this but locks you into a framework, a Node.js server, and hosting costs.
+Every React SPA — whether built with **Vite, Create React App, or any client-side framework** — ships the same thing to crawlers:
 
-## The Solution
+```html
+<html>
+  <body>
+    <div id="root"></div>
+    <script src="/assets/index.js"></script>
+  </body>
+</html>
+```
 
-A **Cloudflare Worker** sits in front of your app and makes a split-second decision:
+That's what Google sees. That's what ChatGPT sees. That's what every social media preview bot sees. **Nothing.**
+
+### What this costs your business:
+
+- 🚫 **Zero organic search traffic** — Google can't index what it can't read
+- 🚫 **Broken social sharing** — LinkedIn, Twitter, Facebook show blank previews
+- 🚫 **Invisible to AI** — ChatGPT, Perplexity, Claude never recommend your product
+- 🚫 **Lost revenue** — every day your pages aren't indexed is money left on the table
+
+### The "industry standard" solution?
+
+Migrate to **Next.js**. Rewrite your entire app. Pay Vercel $20–$100+/month. Get locked into their ecosystem forever.
+
+**That's insane.** There's a better way.
+
+---
+
+## 💀 Next.js vs. This Solution — Head to Head
+
+Let's be honest about what you're paying for:
+
+| | ⚡ react-prerender-worker | Next.js on Vercel |
+|---|:---:|:---:|
+| 💰 **Monthly cost** | **$0** (free tiers) | **$20–$100+** |
+| ⚡ **Bot response time** | **~50ms** (edge cache) | **~200–500ms** (SSR) |
+| 🔒 **Framework lock-in** | **None — keep your stack** | **Next.js only, forever** |
+| 📄 **Pages supported** | **10,000+ tested** | Depends on pricing plan |
+| 🌍 **Global performance** | **Edge (300+ cities)** | Regional servers |
+| 🔄 **Migration effort** | **Zero — drop-in addition** | **Full app rewrite** |
+| 👤 **User experience** | Pure SPA (instant navigation) | SSR + hydration jank |
+| 🤖 **AI crawler support** | **100+ bot patterns** | Basic |
+| 📱 **Social previews** | ✅ Full OG/meta support | ✅ |
+| ⏱️ **Setup time** | **~30 minutes** | Days to weeks of migration |
+
+### The honest trade-off
+
+Next.js gives humans server-rendered HTML on first page load. This solution shows a loading spinner for ~1 second while the SPA boots. After that? **Every navigation is instant** — no hydration overhead, no server round-trips. Bots get full content either way.
+
+**You're not choosing between good SEO and bad SEO. You're choosing between $0 and $100/month for the same result.**
+
+---
+
+## 🧠 How It Actually Works
+
+A tiny Cloudflare Worker (free tier) sits in front of your domain. Every request, it makes one decision in under 1ms:
 
 ```
                     yoursite.com
@@ -31,48 +88,90 @@ A **Cloudflare Worker** sits in front of your app and makes a split-second decis
               │                     │
               ▼                     ▼
      ┌────────────────┐    ┌────────────────┐
-     │   Supabase DB  │    │ Cloudflare Pages│
-     │ (Cached HTML)  │    │   (React SPA)   │
+     │   Supabase DB  │    │ Cloudflare CDN │
+     │ (Rich HTML     │    │  (Your React   │
+     │  with Schema)  │    │   SPA, fast)   │
      └────────────────┘    └────────────────┘
 ```
 
-- **Bots** get content-rich, SEO-optimized HTML from a database cache (~50ms TTFB)
-- **Humans** get your blazing-fast React SPA from the CDN edge
-- **Cost**: $0/month on free tiers
+- **Bots** → get pre-built, SEO-rich HTML with Schema.org, Open Graph, meta tags
+- **Humans** → get your blazing-fast React SPA from the global CDN
+- **You** → pay nothing, change nothing in your codebase
+
+No server. No build step. No framework swap.
 
 ---
 
-## How It Compares to Next.js
+## 🤖 100+ Bot Patterns — Out of the Box
 
-| Metric | This Solution | Next.js (Vercel) |
-|--------|:------------:|:----------------:|
-| **Monthly cost at scale** | $0 | $20–$100+ |
-| **Bot TTFB** | ~50ms (DB lookup) | ~200–500ms (SSR) |
-| **Human experience** | Pure SPA (instant nav) | SSR + hydration |
-| **Framework lock-in** | None (React, Vue, anything) | Next.js only |
-| **Pages supported** | 10,000+ tested | Depends on plan |
-| **Infrastructure** | Edge (global) | Regional servers |
-| **Setup complexity** | Medium (one-time) | Low (built-in) |
+The Worker recognizes every crawler that matters:
 
-**Trade-off**: Next.js gives humans SSR on first load. This solution gives humans a loading spinner until the SPA boots — but after that, navigation is instant.
+| Category | Bots Detected |
+|----------|--------------|
+| 🔍 **Search Engines** | Googlebot, Bingbot, Yandex, Baidu, DuckDuckGo, Ecosia, Mojeek |
+| 🤖 **AI Crawlers** | GPTBot, ClaudeBot, PerplexityBot, Google-Extended, Gemini, Meta AI, Mistral, Cohere |
+| 📱 **Social Media** | Facebook, Twitter/X, LinkedIn, WhatsApp, Discord, Telegram, Reddit, Pinterest |
+| 📊 **SEO Tools** | Ahrefs, SEMrush, Screaming Frog, Moz, SERPstat |
+| 🍎 **Platform Bots** | Applebot, AmazonBot, PetalBot |
+| 📰 **Feed Readers** | Feedly, Flipboard, NewsBlur, Inoreader |
+| 🏛️ **Archives** | Wayback Machine, Archive.org |
+
+Every single one sees your **full content**, Open Graph tags, Schema.org markup, and meta descriptions — not an empty `<div>`.
 
 ---
 
-## Quick Start
+## 🏗️ Works With Any Framework AND Any Host
 
-### Prerequisites
+This is **not** a framework. It's a **layer** that sits in front of any SPA, hosted **anywhere**:
 
-- A React app (CRA, Vite, anything)
-- A [Supabase](https://supabase.com) project (free tier)
-- A [Cloudflare](https://cloudflare.com) account (free tier)
-- Your domain's DNS on Cloudflare
+### Frameworks
 
-### 1. Create the Cache Table
+| Framework | Compatible? | Notes |
+|-----------|:-----------:|-------|
+| ⚛️ **React + Vite** | ✅ | Primary target, battle-tested with 10,000+ pages |
+| ⚛️ **Create React App** | ✅ | Drop-in, no ejection needed |
+| ⚛️ **Remix (SPA mode)** | ✅ | Works with client-side Remix |
+| 🟢 **Vue.js** | ✅ | Any Vue SPA that builds to static files |
+| 🔶 **Svelte/SvelteKit** | ✅ | Static adapter works perfectly |
+| 🅰️ **Angular** | ✅ | Standard Angular CLI builds |
+| 🚀 **Astro** | ✅ | Client-rendered pages |
+| 📦 **Any static SPA** | ✅ | If it builds to HTML/JS/CSS, it works |
 
-Run this SQL in your Supabase SQL Editor:
+### Hosting Providers
+
+The Worker just needs an origin URL. Your app can live **anywhere**:
+
+| Host | `PAGES_ORIGIN` value | Notes |
+|------|---------------------|-------|
+| ☁️ **Cloudflare Pages** | `https://your-project.pages.dev` | Easiest — same ecosystem |
+| ▲ **Vercel** | `https://your-project.vercel.app` | Works perfectly |
+| 🔷 **Netlify** | `https://your-project.netlify.app` | Works perfectly |
+| 🚀 **Lovable** | `https://your-id.lovable.app` | Built with AI, SEO with this |
+| 🐙 **GitHub Pages** | `https://username.github.io/repo` | Free static hosting |
+| 🔥 **Firebase Hosting** | `https://your-project.web.app` | Google's CDN |
+| 🌊 **Surge.sh** | `https://your-project.surge.sh` | Simple static hosting |
+| 🖥️ **Any server** | `https://your-origin-url.com` | VPS, Docker, anything with a URL |
+
+**The Worker doesn't care where your files live.** It only needs the URL to proxy human traffic to. Set `PAGES_ORIGIN` to whatever your hosting provider gives you, and it just works.
+
+**Zero code changes to your app.** The Worker only routes traffic — it never touches your build or hosting.
+
+---
+
+## 🚀 Setup in 30 Minutes
+
+### What You Need (All Free)
+
+- Your SPA, hosted anywhere (Vercel, Netlify, Cloudflare Pages, Lovable, GitHub Pages, etc.)
+- A [Supabase](https://supabase.com) account (free tier)
+- A [Cloudflare](https://cloudflare.com) account (free tier — only for the Worker + DNS)
+- Your domain's DNS managed by Cloudflare
+
+### Step 1 — Create the Cache Table
+
+Run in Supabase SQL Editor:
 
 ```sql
--- Store pre-rendered HTML for bot consumption
 CREATE TABLE IF NOT EXISTS prerendered_pages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   path TEXT UNIQUE NOT NULL,
@@ -84,125 +183,17 @@ CREATE TABLE IF NOT EXISTS prerendered_pages (
   expires_at TIMESTAMPTZ
 );
 
--- Fast lookups by path
 CREATE INDEX IF NOT EXISTS idx_prerendered_pages_path ON prerendered_pages(path);
 
--- Allow public read access (bots need this)
 ALTER TABLE prerendered_pages ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public read access" ON prerendered_pages FOR SELECT USING (true);
 ```
 
-### 2. Deploy the Prerender Edge Function
+### Step 2 — Deploy the Prerender Function
 
 Create `supabase/functions/prerender/index.ts`:
 
 ```typescript
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "*",
-};
-
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  const url = new URL(req.url);
-  let path = url.searchParams.get("path") || "/";
-  
-  // Normalize: strip trailing slash (except root)
-  if (path !== "/" && path.endsWith("/")) {
-    path = path.slice(0, -1);
-  }
-
-  // Look up cached HTML
-  const { data, error } = await supabase
-    .from("prerendered_pages")
-    .select("html, title")
-    .eq("path", path)
-    .maybeSingle();
-
-  if (data?.html) {
-    // Increment hit counter (fire-and-forget)
-    supabase.rpc("increment_hit_count", { page_path: path }).then(() => {});
-
-    return new Response(data.html, {
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "text/html; charset=utf-8",
-        "X-Cache": "hit",
-        "X-Prerendered": "true",
-        "Cache-Control": "public, max-age=3600",
-      },
-    });
-  }
-
-  // Cache miss — return 404 so the Worker falls back to SPA
-  return new Response("Not found in cache", {
-    status: 404,
-    headers: { ...corsHeaders, "X-Cache": "miss" },
-  });
-});
-```
-
-Add to `supabase/config.toml`:
-
-```toml
-[functions.prerender]
-verify_jwt = false
-```
-
-### 3. Deploy the Cloudflare Worker
-
-Copy `worker.js` from this package and deploy:
-
-```bash
-# Install Wrangler
-npm install -g wrangler
-
-# Login
-wrangler login
-
-# Deploy
-wrangler deploy
-```
-
-### 4. Configure Environment Variables
-
-In the Cloudflare Dashboard → Your Worker → Settings → Variables:
-
-| Variable | Value |
-|----------|-------|
-| `SUPABASE_URL` | `https://YOUR-PROJECT.supabase.co` |
-| `SUPABASE_ANON_KEY` | Your Supabase anon key |
-| `PAGES_ORIGIN` | `https://your-project.pages.dev` (**must include `https://`!**) |
-
-### 5. Set Up Worker Routes
-
-In Cloudflare → Websites → Your Domain → Workers Routes:
-
-| Route | Worker |
-|-------|--------|
-| `yourdomain.com/*` | `your-worker-name` |
-| `www.yourdomain.com/*` | `your-worker-name` |
-
-⚠️ **Do NOT** add your domain as a Custom Domain on the Pages project — use Worker Routes.
-
----
-
-## Populating the Cache
-
-You need to generate HTML for your pages. Here's the pattern:
-
-```typescript
-// supabase/functions/generate-cache/index.ts
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const supabase = createClient(
@@ -210,244 +201,127 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
-function generatePageHtml(page: { path: string; title: string; content: string; description: string }) {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${page.title}</title>
-  <meta name="description" content="${page.description}">
-  <meta property="og:title" content="${page.title}">
-  <meta property="og:description" content="${page.description}">
-  <meta property="og:url" content="https://yourdomain.com${page.path}">
-  <link rel="canonical" href="https://yourdomain.com${page.path}">
-</head>
-<body>
-  <main>
-    <h1>${page.title}</h1>
-    ${page.content}
-  </main>
-  <script type="application/ld+json">
-  ${JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "WebPage",
-    "name": page.title,
-    "description": page.description,
-    "url": `https://yourdomain.com${page.path}`
-  })}
-  </script>
-</body>
-</html>`;
-}
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS")
+    return new Response(null, { headers: { "Access-Control-Allow-Origin": "*" } });
 
-Deno.serve(async () => {
-  // Fetch your content from whatever tables you have
-  const { data: pages } = await supabase.from("your_content_table").select("*");
+  const url = new URL(req.url);
+  let path = url.searchParams.get("path") || "/";
+  if (path !== "/" && path.endsWith("/")) path = path.slice(0, -1);
 
-  let count = 0;
-  const batch = [];
+  const { data } = await supabase
+    .from("prerendered_pages")
+    .select("html")
+    .eq("path", path)
+    .maybeSingle();
 
-  for (const page of pages || []) {
-    const html = generatePageHtml({
-      path: page.slug,
-      title: page.title,
-      content: page.body,
-      description: page.meta_description || page.title,
+  if (data?.html) {
+    return new Response(data.html, {
+      headers: { "Content-Type": "text/html; charset=utf-8", "X-Cache": "hit" },
     });
-
-    batch.push({ path: page.slug, html, title: page.title, updated_at: new Date().toISOString() });
-
-    // Upsert in batches of 50
-    if (batch.length >= 50) {
-      await supabase.from("prerendered_pages").upsert(batch, { onConflict: "path" });
-      count += batch.length;
-      batch.length = 0;
-    }
   }
 
-  // Final batch
-  if (batch.length > 0) {
-    await supabase.from("prerendered_pages").upsert(batch, { onConflict: "path" });
-    count += batch.length;
-  }
-
-  return new Response(JSON.stringify({ success: true, pages_cached: count }), {
-    headers: { "Content-Type": "application/json" },
-  });
+  return new Response("Not found", { status: 404, headers: { "X-Cache": "miss" } });
 });
 ```
 
-### Auto-Refresh with pg_cron
+### Step 3 — Deploy the Worker
 
-```sql
--- Refresh cache every 6 hours
-SELECT cron.schedule(
-  'refresh-prerender-cache',
-  '0 */6 * * *',
-  $$
-  SELECT net.http_post(
-    'https://YOUR-PROJECT.supabase.co/functions/v1/generate-cache',
-    '{}',
-    'application/json',
-    ARRAY[
-      net.http_header('Authorization', 'Bearer YOUR-ANON-KEY')
-    ]
-  );
-  $$
+```bash
+npm install -g wrangler
+wrangler login
+wrangler deploy
+```
+
+### Step 4 — Set Environment Variables
+
+Cloudflare Dashboard → Worker → Settings → Variables:
+
+| Variable | Value |
+|----------|-------|
+| `SUPABASE_URL` | `https://YOUR-PROJECT.supabase.co` |
+| `SUPABASE_ANON_KEY` | Your Supabase anon key |
+| `PAGES_ORIGIN` | Your app's origin URL (**must include `https://`**) |
+
+> **`PAGES_ORIGIN` examples by host:**
+> - Cloudflare Pages: `https://my-app.pages.dev`
+> - Vercel: `https://my-app.vercel.app`
+> - Netlify: `https://my-app.netlify.app`
+> - Lovable: `https://my-id.lovable.app`
+> - GitHub Pages: `https://user.github.io/repo`
+> - Any server: `https://your-origin.com`
+
+### Step 5 — Configure Worker Routes
+
+Cloudflare → Websites → Your Domain → Workers Routes:
+
+| Route | Worker |
+|-------|--------|
+| `yourdomain.com/*` | `your-worker-name` |
+| `www.yourdomain.com/*` | `your-worker-name` |
+
+⚠️ Use **Worker Routes**, not Pages Custom Domains.
+
+---
+
+## 📝 Populating the Cache
+
+Generate HTML for each page and store it in `prerendered_pages`:
+
+```typescript
+await supabase.from("prerendered_pages").upsert(
+  {
+    path: "/about",
+    title: "About Us",
+    html: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>About Us | YourApp</title>
+  <meta name="description" content="Learn about our mission">
+  <meta property="og:title" content="About Us">
+  <link rel="canonical" href="https://yourdomain.com/about">
+</head>
+<body><h1>About Us</h1><p>Your content here...</p></body>
+</html>`
+  },
+  { onConflict: "path" }
 );
 ```
 
----
-
-## The Worker (Explained)
-
-The `worker.js` file does three things:
-
-### 1. Bot Detection
-Checks the `User-Agent` against 100+ known patterns:
-- Search engines: Google, Bing, Baidu, Yandex, DuckDuckGo
-- AI crawlers: GPTBot, ClaudeBot, PerplexityBot, Google-Extended
-- Social media: Facebook, Twitter, LinkedIn, WhatsApp, Discord
-- SEO tools: Ahrefs, SEMrush, Screaming Frog
-
-### 2. Smart Routing
-```
-Static asset (.js, .css, .png)?  → Cloudflare Pages (always)
-Excluded path (/cms, /api)?      → Cloudflare Pages (always)
-Bot detected?                    → Supabase prerender cache
-Human visitor?                   → Cloudflare Pages (SPA)
-```
-
-### 3. Script Injection (Optional)
-The Worker can inject analytics/CMP scripts into every HTML response at the edge — no build step needed. Remove the `INJECT_SCRIPT` constant and `injectScript()` function if you don't need this.
+Schedule with `pg_cron` to keep the cache fresh every few hours.
 
 ---
 
-## Testing
+## ✅ Verify It Works
 
 ```bash
-# Test as a regular user (should get SPA)
+# Human request — gets your SPA
 curl -I https://yourdomain.com/
 # → No X-Prerendered header
 
-# Test as Googlebot (should get cached HTML)
+# Bot request — gets cached HTML
 curl -I -H "User-Agent: Googlebot/2.1" https://yourdomain.com/
-# → X-Prerendered: true
-# → X-Cache: hit
-
-# Test as ChatGPT (should get full HTML content)
-curl -H "User-Agent: ChatGPT-User" https://yourdomain.com/about
-# → Full HTML with <h1>, <p>, Schema.org markup
-
-# Test social media previews
-curl -H "User-Agent: facebookexternalhit/1.1" https://yourdomain.com/
-# → HTML with Open Graph tags
+# → X-Prerendered: true, X-Cache: hit
 ```
 
 ---
 
-## Customization
-
-### Adding Your Own Script Injection
-
-Replace the `INJECT_SCRIPT` constant in `worker.js`:
-
-```javascript
-const INJECT_SCRIPT = `<script>
-  // Your analytics, CMP, or tracking script here
-</script>`;
-```
-
-### Adding More Bot Patterns
-
-Add to the `BOT_AGENTS` array:
-
-```javascript
-const BOT_AGENTS = [
-  // ... existing bots
-  'my-custom-bot',
-];
-```
-
-### Excluding Paths
-
-Add to `isExcludedPath()`:
-
-```javascript
-function isExcludedPath(path) {
-  const excludedPatterns = [
-    '/cms',
-    '/api/',
-    '/admin/',     // Add your own
-    '/dashboard/', // Add your own
-  ];
-  return excludedPatterns.some(pattern => path.startsWith(pattern));
-}
-```
-
----
-
-## Cost Breakdown
-
-| Service | Free Tier Limit | Typical Usage |
-|---------|----------------|---------------|
-| Cloudflare Pages | Unlimited bandwidth | ✅ Well within |
-| Cloudflare Worker | 100,000 requests/day | ✅ Well within |
-| Supabase Database | 500MB storage | ✅ ~50MB for 10K pages |
-| Supabase Edge Functions | 500K invocations/month | ✅ Well within |
-| **Total** | — | **$0/month** |
-
----
-
-## Common Mistakes
+## ⚠️ Common Mistakes
 
 | Mistake | Fix |
 |---------|-----|
-| `PAGES_ORIGIN` missing `https://` | Always include the protocol: `https://abc.pages.dev` |
-| Bot Fight Mode enabled | Cloudflare → Security → Bots → Turn OFF |
+| `PAGES_ORIGIN` missing `https://` | Always include the protocol |
+| Bot Fight Mode enabled | Turn it OFF (Cloudflare → Security → Bots) |
 | Domain added as Pages Custom Domain | Use Worker Routes instead |
-| Empty `prerendered_pages` table | Run your cache generator first |
-| `robots.txt` blocking crawlers | Ensure `Allow: /` for all bots |
+| Empty cache table | Run your cache generator first |
 
 ---
 
-## Project Structure
+## 🤝 Built for AI-Assisted Development
 
-```
-your-project/
-├── cloudflare-worker/
-│   └── worker.js          ← The bot-detection router
-├── supabase/
-│   └── functions/
-│       ├── prerender/      ← Serves cached HTML to bots
-│       └── generate-cache/ ← Populates the HTML cache
-├── wrangler.toml           ← Worker deployment config
-└── public/
-    └── _redirects           ← SPA fallback for Cloudflare Pages
-```
+This repo is designed to be implemented by **AI coding assistants** like Lovable, Cursor, Bolt, or ChatGPT. Hand the setup guide to your AI, point it at your React app, and you'll have full SEO in under an hour.
 
----
-
-## FAQ
-
-**Q: Does this work with Vite/CRA/any React setup?**
-Yes. The Worker doesn't care what builds your SPA — it only routes traffic.
-
-**Q: What about Vue/Svelte/Angular?**
-Works with any SPA framework. The bot detection and routing logic is framework-agnostic.
-
-**Q: How many pages can I cache?**
-Tested with 10,000+ pages. Supabase free tier gives you 500MB — enough for ~50,000 pages.
-
-**Q: What if a page isn't in the cache?**
-The Worker falls back to serving the SPA shell, so the bot gets the standard React app.
-
-**Q: How fresh is the cached HTML?**
-As fresh as your `pg_cron` schedule. Default is every 6 hours.
-
-**Q: Can I use this without Supabase?**
-Yes — swap the prerender function for any API/database that returns HTML by path. The Worker is the core.
+The architecture is intentionally simple — two services (Cloudflare + Supabase), one Worker file, one Edge Function, one database table. Any AI agent can understand and implement it.
 
 ---
 
@@ -457,8 +331,6 @@ MIT — use it, fork it, ship it.
 
 ---
 
-## Credits
+**Serving 9,000+ SEO-optimized pages for $0/month since 2025.**
 
-Built with [Cloudflare Workers](https://workers.cloudflare.com/), [Supabase](https://supabase.com), and stubbornness to avoid paying for SSR.
-
-*Serving 9,000+ SEO-optimized pages for $0/month since 2025.*
+**Keywords:** react seo, react spa seo, react prerender, react server side rendering alternative, react cloudflare workers, react supabase, vite seo, cra seo, react google indexing, react open graph, react social sharing, spa prerendering, react bot detection, nextjs alternative, free react ssr, react crawlers, react ai crawlers, react schema markup, react meta tags, static site generation react

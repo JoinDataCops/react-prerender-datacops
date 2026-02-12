@@ -13,10 +13,25 @@
  */
 
 // =============================================================================
-// OPTIONAL: Script injection (analytics, CMP, etc.)
-// Remove this section if you don't need edge-injected scripts.
+// SCRIPT INJECTION (analytics, CMP, tracking pixels, etc.)
+// 
+// Set INJECT_SCRIPT to a string to inject scripts into <head> of every HTML 
+// response — for both humans AND bots. No rebuild needed, changes go live
+// globally in seconds.
+//
+// Example — Google Analytics:
+//   const INJECT_SCRIPT = `<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXX"></script>
+//   <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-XXXXX');</script>`;
+//
+// Example — Multiple scripts (GTM + CMP + Hotjar + Meta Pixel):
+//   const INJECT_SCRIPT = `<script>...GTM...</script>
+//   <script src="https://your-cmp.com/cmp.js"></script>
+//   <script>...Hotjar...</script>
+//   <script>...Meta Pixel...</script>`;
+//
+// Set to null to disable:
 // =============================================================================
-const INJECT_SCRIPT = null; // Set to a string like `<script>...</script>` to inject
+const INJECT_SCRIPT = null;
 
 /**
  * Inject a script into HTML responses before </head>
