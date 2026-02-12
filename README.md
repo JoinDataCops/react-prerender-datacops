@@ -82,7 +82,7 @@ Let's talk about what the "industry standard" actually costs you.
 | 💰 **Monthly cost** | **$0** (free tiers) | **$20–$100+** ([bandwidth limits on free](https://vercel.com/pricing)) |
 | ⚡ **Bot response time** | **~50ms** (edge cache) | **~200–500ms** (traditional SSR) |
 | 🔒 **Vendor lock-in** | **None — keep your stack** | **Deep** ([community revolt](https://www.reddit.com/r/nextjs/comments/1gydkmu/is_nextjs_a_vendor_lockin_architecture/)) |
-| 📄 **Pages supported** | **9,000+ tested in production** | Depends on pricing tier |
+| 📄 **Pages supported** | **350,000+ tested in production** | Depends on pricing tier |
 | 🌍 **Global performance** | **Edge (300+ cities)** | Regional servers |
 | 🔄 **Migration effort** | **Zero — drop-in addition** | **Full app rewrite** |
 | 👤 **User experience** | Pure SPA (instant navigation) | SSR + hydration overhead |
@@ -422,6 +422,6 @@ MIT — use it, fork it, ship it.
 
 ---
 
-**Serving 9,000+ SEO-optimized pages for $0/month in production.**
+**Serving 350,000+ SEO-optimized pages for $0/month in production.**
 
 **Keywords:** react seo, react spa seo, react prerender, react server side rendering alternative, react cloudflare workers, react supabase, vite seo, cra seo, react google indexing, react open graph, react social sharing, spa prerendering, react bot detection, nextjs alternative, free react ssr, react crawlers, react ai crawlers, react schema markup, react meta tags, static site generation react, lovable seo, bolt.new seo, v0 seo, ai app builder seo, react spa google invisible, nextjs alternative free, vite seo fix, react prerender free, cloudflare worker seo, ai website seo, ai generated website google indexing, nextjs vendor lock-in, vercel alternative, cursor seo, replit seo, ai built website seo, dynamic rendering react, react prerender cloudflare
