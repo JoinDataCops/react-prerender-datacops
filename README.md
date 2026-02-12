@@ -331,6 +331,6 @@ MIT — use it, fork it, ship it.
 
 ---
 
-**Serving 9,000+ SEO-optimized pages for $0/month since 2025.**
+**Serving 350,000+ SEO-optimized pages for $0/month since 2025.**
 
 **Keywords:** react seo, react spa seo, react prerender, react server side rendering alternative, react cloudflare workers, react supabase, vite seo, cra seo, react google indexing, react open graph, react social sharing, spa prerendering, react bot detection, nextjs alternative, free react ssr, react crawlers, react ai crawlers, react schema markup, react meta tags, static site generation react
