@@ -91,14 +91,6 @@ Let's talk about what the "industry standard" actually costs you.
 | ⏱️ **Setup time** | **~30 minutes** | Days to weeks of migration |
 | 🏗️ **Host anywhere** | Cloudflare, Vercel, Netlify, anywhere | **Vercel-optimized only** |
 
-### The Vendor Lock-In Receipts
-
-This isn't speculation. The developer community is screaming about it:
-
-- 📢 **Reddit**: ["Is Next.js a Vendor Lock-In Architecture?"](https://www.reddit.com/r/nextjs/comments/1gydkmu/is_nextjs_a_vendor_lockin_architecture/) — hundreds of upvotes, developers sharing migration horror stories
-- 📰 **Netlify's public callout** — Netlify engineers have publicly documented Next.js features that only work properly on Vercel
-- 🏃 **Companies leaving** — growing list of teams migrating away from Next.js due to Vercel dependency, spiraling costs, and deployment complexity
-- 💸 **The cost trap** — Vercel's free tier has hard bandwidth limits. Hit them with a viral post and you're paying $150+ overnight
 
 ### The Absurdity Angle
 
@@ -123,20 +115,20 @@ Google **recommends** pre-rendering for JavaScript-heavy sites. The content serv
 
 ---
 
-## 🍒 The Cherry on Top — The $500/Month "AI Visibility" Scam
+## The $500/Month "AI Visibility" Scam
 
 A new wave of YC-funded startups want to charge you **$29–$500+/month** to "optimize your AI visibility." They have slick landing pages, Series A funding, and enterprise sales teams. Here's who they are:
 
-| Startup | Backed By | What They Charge | What They Actually Do |
+| Startup | What They Charge | What They Actually Do |
 |---------|-----------|-----------------|----------------------|
-| **Relixir** | YC Spring 2025 | Subscription | "GEO-Native CMS" — generates content for LLM citations |
-| **Anvil** | YC X25 | Subscription | Tracks how your brand appears in ChatGPT |
-| **Profound** | VC-funded | Enterprise pricing | "Answer Engine Insights" — monitors AI mentions |
-| **Rankmind** | VC-funded | Subscription | Tells you which prompts mention your brand |
-| **Visible AI** | VC-funded | Subscription | Generates `llms.txt` files and "AI optimization" |
-| **Otterly** | VC-funded | Subscription | AI search monitoring dashboards |
-| **Goodie** | VC-funded | Subscription | Yet another GEO analytics tool |
-| **Gauge** | VC-funded | Subscription | "AI Visibility" tracking |
+| **Relixir** | Subscription | "GEO-Native CMS" — generates content for LLM citations |
+| **Anvil** | Subscription | Tracks how your brand appears in ChatGPT |
+| **Profound** | Enterprise pricing | "Answer Engine Insights" — monitors AI mentions |
+| **Rankmind** | Subscription | Tells you which prompts mention your brand |
+| **Visible AI** | Subscription | Generates `llms.txt` files and "AI optimization" |
+| **Otterly** | Subscription | AI search monitoring dashboards |
+| **Goodie** | Subscription | Yet another GEO analytics tool |
+| **Gauge** | Subscription | "AI Visibility" tracking |
 
 They call it **GEO** — "Generative Engine Optimization." An entire industry invented to sell you dashboards.
 
@@ -460,7 +452,7 @@ Users see a brief loading state (~1 second) while the SPA boots. After that, **e
 
 ### "Can this handle large sites?"
 
-Battle-tested with **9,000+ pages in production**, auto-refreshed every 6 hours. The Supabase free tier handles this comfortably.
+Battle-tested with **350,000+ pages in production**, auto-refreshed every 6 hours. The Supabase free tier handles this comfortably.
 
 ---
 
@@ -478,6 +470,6 @@ MIT — use it, fork it, ship it.
 
 ---
 
-**Serving 9,000+ SEO-optimized pages for $0/month in production.**
+**Serving 350,000+ SEO-optimized pages for $0/month in production.**
 
 **Keywords:** react seo, react spa seo, react prerender, react server side rendering alternative, react cloudflare workers, react supabase, vite seo, cra seo, react google indexing, react open graph, react social sharing, spa prerendering, react bot detection, nextjs alternative, free react ssr, react crawlers, react ai crawlers, react schema markup, react meta tags, static site generation react, lovable seo, bolt.new seo, v0 seo, ai app builder seo, react spa google invisible, nextjs alternative free, vite seo fix, react prerender free, cloudflare worker seo, ai website seo, ai generated website google indexing, nextjs vendor lock-in, vercel alternative, cursor seo, replit seo, ai built website seo, dynamic rendering react, react prerender cloudflare, geo alternative free, generative engine optimization free, ai visibility free, relixir alternative, anvil seo alternative, geo tool free, ai search optimization free, llm visibility react, chatgpt visibility spa, ai crawler react fix, ai seo startup alternative, profound alternative, rankmind alternative, otterly alternative, geo pricing, generative engine optimization cost
