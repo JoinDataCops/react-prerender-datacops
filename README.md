@@ -8,9 +8,6 @@
 >
 > Built and maintained by [**DataCops**](https://joindatacops.com) — first-party analytics, bot filtering, conversion APIs, and consent management from your own domain. We recover the 15–60% of session data that ad blockers and ITP silently drop, then distribute clean conversions to every ad platform and CRM.
 >
-> We built this prerender system to solve our own SEO problem: our React dashboard was invisible to crawlers. Now it's open source because every SPA deserves search visibility.
->
-> Use it, fork it, modify it — MIT licensed, no restrictions. Contributions welcome.
 
 ### 10 million applications built on Lovable. Millions more on Bolt, v0, Cursor, Replit. Every single one invisible to search engines.
 
