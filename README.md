@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-[![GitHub Stars](https://img.shields.io/github/stars/YOUR_USERNAME/react-prerender-worker?style=social)](https://github.com/YOUR_USERNAME/react-prerender-worker)
+[![GitHub Stars](https://img.shields.io/github/stars/YOUR_USERNAME/react-prerender-worker?style=social)](https://github.com/JoinDataCops/react-prerender-datacops)
 
 > **Open Source · MIT Licensed · Free Forever**
 >
