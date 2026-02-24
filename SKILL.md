@@ -29,8 +29,9 @@ Browser Request
 │                                 │
 │  1. Static asset? → pass thru   │
 │  2. Sitemap URL? → proxy to API │
-│  3. Bot UA? → fetch from API    │
-│  4. Human? → pass thru (SPA)    │
+│  3. Fetch scripts → inject tags │
+│  4. Bot UA? → prerendered HTML  │
+│  5. Human? → SPA + injected     │
 └─────────────────────────────────┘
       │                    │
       ▼                    ▼
@@ -38,6 +39,7 @@ Browser Request
                     ├── GET /prerender?path=...    (cache lookup)
                     ├── POST /generate-cache       (cache builder)
                     ├── GET /sitemap?name=...       (sitemap)
+                    ├── GET /script-service         (3rd party scripts)
                     └── POST /manage-cron           (scheduler)
 ```
 

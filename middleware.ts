@@ -1,6 +1,6 @@
 /**
  * Cloudflare Pages Functions Middleware
- * Bot Detection + Prerender + Dynamic Sitemaps
+ * Bot Detection + Prerender + Dynamic Sitemaps + Script Injection
  * 
  * Place this file at: functions/_middleware.ts (project root)
  * Cloudflare Pages auto-detects it as edge middleware.
@@ -8,6 +8,13 @@
  * REQUIRES environment variables in Pages dashboard:
  *   - SUPABASE_URL
  *   - SUPABASE_ANON_KEY
+ * 
+ * FEATURES:
+ *   1. Bot detection → serves prerendered HTML from Supabase cache
+ *   2. Dynamic sitemaps → proxies to Supabase generate-sitemap / serve-sitemap
+ *   3. Script injection → fetches 3rd-party scripts from script-service edge function
+ *      and injects them into every HTML response (bots + humans)
+ *      This ensures analytics survive AI platform rebuilds and run in first-party context.
  */
 
 const BOT_AGENTS = [
@@ -48,6 +55,16 @@ interface Env {
   ASSETS: { fetch: (req: Request) => Promise<Response> };
 }
 
+interface ScriptCache {
+  head: string[];
+  body: string[];
+  fetchedAt: number;
+}
+
+// Module-level cache — persists within each Cloudflare isolate
+let scriptCache: ScriptCache | null = null;
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
 function isBot(ua: string): boolean {
   if (!ua) return false;
   const lower = ua.toLowerCase();
@@ -56,6 +73,69 @@ function isBot(ua: string): boolean {
 
 function isStaticAsset(path: string): boolean {
   return /\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|eot|map|json|txt|pdf|mp4|webm|webp|avif)$/i.test(path);
+}
+
+/**
+ * Fetch scripts from the script-service edge function.
+ * Cached in isolate memory for 5 minutes. Falls back to stale cache or empty.
+ */
+async function getScripts(env: Env): Promise<{ head: string; body: string }> {
+  const now = Date.now();
+  if (scriptCache && (now - scriptCache.fetchedAt) < CACHE_TTL_MS) {
+    return {
+      head: scriptCache.head.join('\n'),
+      body: scriptCache.body.join('\n'),
+    };
+  }
+
+  try {
+    const resp = await fetch(
+      `${env.SUPABASE_URL}/functions/v1/script-service`,
+      {
+        headers: {
+          'Authorization': `Bearer ${env.SUPABASE_ANON_KEY}`,
+          'apikey': env.SUPABASE_ANON_KEY,
+        },
+      }
+    );
+
+    if (resp.ok) {
+      const data = await resp.json() as { head: string[]; body: string[] };
+      scriptCache = {
+        head: data.head || [],
+        body: data.body || [],
+        fetchedAt: now,
+      };
+      return {
+        head: scriptCache.head.join('\n'),
+        body: scriptCache.body.join('\n'),
+      };
+    }
+  } catch (e) {
+    // If fetch fails, use stale cache or empty
+  }
+
+  if (scriptCache) {
+    return {
+      head: scriptCache.head.join('\n'),
+      body: scriptCache.body.join('\n'),
+    };
+  }
+
+  return { head: '', body: '' };
+}
+
+/**
+ * Inject script tags into HTML before </head> and </body>.
+ */
+function injectScripts(html: string, scripts: { head: string; body: string }): string {
+  if (scripts.head) {
+    html = html.replace('</head>', `${scripts.head}\n</head>`);
+  }
+  if (scripts.body) {
+    html = html.replace('</body>', `${scripts.body}\n</body>`);
+  }
+  return html;
 }
 
 export const onRequest: PagesFunction<Env> = async (context) => {
@@ -73,17 +153,21 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   if (path === '/__debug') {
     return new Response(JSON.stringify({
       middleware: 'pages-middleware',
-      version: '1.0.0',
+      version: '2.0.0',
       hasSupabaseUrl: !!env.SUPABASE_URL,
       hasSupabaseKey: !!env.SUPABASE_ANON_KEY,
       hostname: url.hostname,
       userAgent: userAgent.substring(0, 80),
       isBot: isBot(userAgent),
+      scriptCacheAge: scriptCache ? Math.round((Date.now() - scriptCache.fetchedAt) / 1000) + 's' : 'cold',
       timestamp: new Date().toISOString(),
     }, null, 2), {
       headers: { 'Content-Type': 'application/json' },
     });
   }
+
+  // Fetch scripts (cached in isolate memory)
+  const scripts = await getScripts(env);
 
   // Dynamic sitemaps — proxy to Supabase generate-sitemap
   if (path === '/sitemap-markets.xml' || path === '/sitemap-pillars.xml') {
@@ -141,7 +225,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     }
   }
 
-  // Bot detection — serve prerendered HTML from Supabase cache
+  // Bot detection — serve prerendered HTML with scripts injected
   if (isBot(userAgent)) {
     try {
       const prerenderUrl = `${env.SUPABASE_URL}/functions/v1/prerender?path=${encodeURIComponent(path)}`;
@@ -153,11 +237,13 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         },
       });
       if (res.ok) {
-        return new Response(await res.text(), {
+        const html = injectScripts(await res.text(), scripts);
+        return new Response(html, {
           status: 200,
           headers: {
             'Content-Type': 'text/html; charset=utf-8',
             'X-Prerendered': 'true',
+            'X-Scripts-Injected': 'true',
             'X-Cache': res.headers.get('X-Cache') || 'hit',
             'Cache-Control': 'public, max-age=3600',
           },
@@ -168,6 +254,21 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     }
   }
 
-  // Human (or bot fallback) — serve SPA natively from Pages
-  return next();
+  // Human (or bot fallback) — serve SPA with scripts injected
+  const response = await next();
+
+  // Only inject into HTML responses
+  const contentType = response.headers.get('Content-Type') || '';
+  if (!contentType.includes('text/html')) {
+    return response;
+  }
+
+  const html = injectScripts(await response.text(), scripts);
+  return new Response(html, {
+    status: response.status,
+    headers: {
+      ...Object.fromEntries(response.headers.entries()),
+      'X-Scripts-Injected': 'true',
+    },
+  });
 };
