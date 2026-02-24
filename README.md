@@ -66,7 +66,6 @@ This solution addresses the requirements of **millions building applications thr
 | ----------------- | ---------------------- | ---------------- | :--------: | :-----------------: |
 | 🟣 **Lovable**    | 10M+ projects          | React + Vite     |   ❌ No    |    ✅ 30 minutes    |
 | ⚡ **Bolt.new**   | Millions               | React + Vite     |   ❌ No    |    ✅ 30 minutes    |
-| ▲ **v0 (Vercel)** | Millions               | React            |   ❌ No    |    ✅ 30 minutes    |
 | 🔵 **Cursor**     | Millions               | Any SPA          |   ❌ No    |    ✅ 30 minutes    |
 | 🟢 **Replit**     | Millions               | Any SPA          |   ❌ No    |    ✅ 30 minutes    |
 
