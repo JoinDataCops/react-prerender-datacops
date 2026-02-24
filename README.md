@@ -4,7 +4,7 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![GitHub Stars](https://img.shields.io/github/stars/JoinDataCops/react-prerender-datacops?style=social)](https://github.com/JoinDataCops/react-prerender-datacops)
 
- **Open Source · MIT Licensed · Free Forever**
+ **Open Source · MIT Licensed**
 
  Built and maintained by [**DataCops**](https://joindatacops.com)   first-party analytics, bot filtering, no-code conversion APIs, and first-party  consent management from your own domain. We recover the 15–60% of session data that ad blockers and ITP silently drop, then distribute clean conversions to every ad platform and CRM.
 
