@@ -581,6 +581,113 @@ See `database-schema.sql` for full SQL and `edge-functions/manage-cron-job.ts` f
 
 ---
 
+## Script Service — Dynamic 3rd Party Script Injection
+
+### The Core Problem
+
+React SPAs cannot natively inject 3rd-party scripts without modifying source code. This is a critical limitation because:
+
+1. **AI-built apps** (Lovable, Bolt, Cursor) don't expose `index.html` — you can't manually add `<script>` tags
+2. **Every AI rebuild** can overwrite hardcoded scripts
+3. **Analytics, tracking pixels, consent managers** all require `<script>` tags in `<head>` or `<body>`
+4. **No server layer** exists in a pure SPA to dynamically inject tags
+
+### How Script Service Solves It
+
+The Script Service is a **backend function** that returns a JSON object containing all scripts to inject:
+
+```json
+{
+  "head": [
+    "<script async src=\"https://www.googletagmanager.com/gtag/js?id=G-XXXXX\"></script>",
+    "<script>/* consent manager */</script>"
+  ],
+  "body": [
+    "<script>/* chat widget */</script>"
+  ]
+}
+```
+
+The Cloudflare middleware **fetches this registry** (cached for 5 minutes) and injects the scripts into every HTML response — both for bots and humans. Scripts run in a **first-party context** (same domain), bypassing ad-blocker and reverse-proxy limitations.
+
+### API Endpoint: `GET /script-service`
+
+**Purpose:** Return all 3rd-party scripts to inject into HTML responses.
+
+**Response:**
+```json
+{
+  "head": ["<script>...</script>", "<script src=\"...\"></script>"],
+  "body": ["<script>...</script>"]
+}
+```
+
+**Pseudocode (any language):**
+```
+function handleScriptService(request):
+    return JSON response:
+        status: 200
+        headers:
+            Content-Type: application/json
+            Cache-Control: public, max-age=300
+        body: {
+            head: [
+                // Google Analytics
+                "<script async src='https://www.googletagmanager.com/gtag/js?id=G-XXXXX'></script>",
+                // Consent manager
+                "<script src='https://consent-tool.com/banner.js'></script>"
+            ],
+            body: [
+                // Chat widget, etc.
+            ]
+        }
+```
+
+**Node.js/Express example:**
+```javascript
+app.get('/script-service', (req, res) => {
+  res.json({
+    head: [
+      `<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXX"></script>
+       <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-XXXXX');</script>`,
+    ],
+    body: [],
+  });
+});
+```
+
+**Supabase Edge Function:** See `edge-functions/script-service.ts` for the Deno/Supabase version.
+
+### Middleware Integration
+
+The middleware already handles script injection. The key functions:
+
+```typescript
+// Fetch scripts (cached in-memory for 5 minutes)
+async function getScripts(env): Promise<{ head: string; body: string }> {
+    // Fetch from your script-service endpoint
+    // Cache the result in-memory for 5 min
+    // Return joined strings for head and body
+}
+
+// Inject into HTML response
+function injectScripts(html: string, scripts: { head: string; body: string }): string {
+    if (scripts.head) html = html.replace('</head>', `${scripts.head}\n</head>`);
+    if (scripts.body) html = html.replace('</body>', `${scripts.body}\n</body>`);
+    return html;
+}
+```
+
+### Adding / Removing Scripts
+
+To add a new script: edit your script-service function and redeploy. **No changes to your React app.**
+
+To remove a script: delete it from the registry and redeploy. **No changes to your React app.**
+
+The 5-minute edge cache ensures changes propagate quickly without hammering your backend.
+
+---
+
 ## Customization Guide
 
 ### Adding New Page Types
@@ -617,3 +724,5 @@ Edit the `BOT_AGENTS` array in `functions/_middleware.ts`. The included list cov
 | Scheduler not firing | Check your scheduler logs (pg_cron, node-cron, etc.) |
 | API auth failing | Verify Cloudflare env vars match your API auth requirements |
 | HTML too small / empty | Check your content generator queries — ensure they return data |
+| Scripts not injecting | Check `__debug` endpoint for `scriptCacheAge`, verify script-service endpoint returns valid JSON |
+| Scripts blocked by ad-blockers | Scripts injected at edge run in first-party context — this is the solution |

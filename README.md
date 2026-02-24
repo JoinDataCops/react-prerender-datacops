@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-[![GitHub Stars](https://img.shields.io/github/stars/YOUR_USERNAME/react-prerender-worker?style=social)](https://github.com/JoinDataCops/react-prerender-datacops)
+[![GitHub Stars](https://img.shields.io/github/stars/JoinDataCops/react-prerender-datacops?style=social)](https://github.com/JoinDataCops/react-prerender-datacops)
 
 > **Open Source · MIT Licensed · Free Forever**
 >
@@ -106,9 +106,51 @@ Googlebot visits your-site.com → Rich, pre-built HTML with full SEO
 3. If the visitor is a **human**, it passes through to your normal SPA
 4. A **scheduled job** automatically refreshes the cached HTML
 
+---
+
+## 🔌 Script Service — 3rd Party Integrations Without Code Changes
+
+### The Problem React SPAs Have with 3rd Party Scripts
+
+React SPAs have a **fundamental limitation**: adding analytics, tracking pixels, consent managers, or any 3rd-party `<script>` tag requires modifying source code, rebuilding, and redeploying. For AI-generated applications, this means:
+
+- 🚫 **No access to `index.html`** — AI platforms like Lovable, Bolt.new, and Cursor don't expose the HTML shell
+- 🚫 **Hardcoded scripts break on rebuild** — every AI edit can overwrite your manual changes
+- 🚫 **No server-side injection** — React SPAs have no server layer to dynamically insert tags
+- 🚫 **Analytics blind spots** — Google Analytics, Facebook Pixel, consent banners, heatmaps all require `<script>` tags in `<head>` or `<body>`
+
+### The Solution: Dynamic Script Injection at the Edge
+
+The **Script Service** is a lightweight backend function that acts as a **centralized registry** of all your 3rd-party scripts. The Cloudflare middleware fetches this registry and **dynamically injects scripts into every HTML response** — for both bots and humans.
+
+```
+Your Script Service (backend)          Cloudflare Middleware (edge)
+┌──────────────────────────┐          ┌──────────────────────────┐
+│  Returns JSON:           │  ──────► │  Injects into HTML:      │
+│  {                       │          │                          │
+│    head: ["<script>..."] │          │  </head> ← head scripts  │
+│    body: ["<script>..."] │          │  </body> ← body scripts  │
+│  }                       │          │                          │
+└──────────────────────────┘          └──────────────────────────┘
+```
+
+### Why This Matters
+
+| Capability | Without Script Service | With Script Service |
+|------------|:---------------------:|:-------------------:|
+| Add Google Analytics | ❌ Edit source, rebuild, redeploy | ✅ Add to registry, instant |
+| Add Facebook Pixel | ❌ Edit source, rebuild, redeploy | ✅ Add to registry, instant |
+| Add consent manager (GDPR) | ❌ Edit source, rebuild, redeploy | ✅ Add to registry, instant |
+| Add heatmap (Hotjar, etc.) | ❌ Edit source, rebuild, redeploy | ✅ Add to registry, instant |
+| Remove a script | ❌ Edit source, rebuild, redeploy | ✅ Remove from registry, instant |
+| Scripts survive AI rebuilds | ❌ Overwritten | ✅ Decoupled from source |
+| First-party context | ❌ CDN/proxy issues | ✅ Injected at edge |
+
+> **One function. Any script. Zero code changes. Survives every rebuild.**
+
 ### Stack Agnostic
 
-The **only constant** is Cloudflare Pages middleware for bot detection. Everything else is swappable:
+The **only constant** is Cloudflare Pages middleware for bot detection and script injection. Everything else is swappable:
 
 | Layer                    | Options                                                                                                                           |
 | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
@@ -116,6 +158,7 @@ The **only constant** is Cloudflare Pages middleware for bot detection. Everythi
 | **Database**             | PostgreSQL, MongoDB, MySQL, Redis, DynamoDB, Firebase Firestore, Supabase, PlanetScale — anything that stores text                |
 | **Backend / API**        | Supabase Edge Functions, Node.js/Express, Python/FastAPI, Go, AWS Lambda, Vercel Functions, Netlify Functions, Firebase Functions |
 | **Cron / Scheduler**     | pg_cron, node-cron, AWS EventBridge, GitHub Actions, Railway cron, Render cron, any scheduler                                     |
+| **Script Registry**      | Supabase Edge Function, Express endpoint, Lambda, any HTTP JSON endpoint                                                          |
 | **Frontend**             | React, Vue, Svelte, Angular — any SPA framework                                                                                   |
 
 ## What's Included
@@ -130,6 +173,7 @@ The **only constant** is Cloudflare Pages middleware for bot detection. Everythi
 | `edge-functions/generate-sitemap.ts`         | Supabase reference: dynamic sitemap                        |
 | `edge-functions/serve-sitemap.ts`            | Supabase reference: static sitemap                         |
 | `edge-functions/manage-cron-job.ts`          | Supabase reference: cron manager                           |
+| `edge-functions/script-service.ts`           | Supabase reference: dynamic script injection registry      |
 
 > **Note:** The `edge-functions/` folder contains Supabase/Deno implementations as a reference. If you use a different backend, implement the same endpoints in your stack — the SKILL.md shows how.
 
@@ -152,6 +196,8 @@ After deploying this system:
 - ✅ FAQ and product structured data appears in search results
 - ✅ Sitemaps are auto-generated and always up-to-date
 - ✅ Cache refreshes automatically — set it and forget it
+- ✅ 3rd-party scripts (analytics, pixels, consent) managed from one place — no code changes
+- ✅ Scripts survive AI rebuilds — decoupled from your React source code
 
 ---
 
