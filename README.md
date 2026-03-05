@@ -29,7 +29,7 @@ This skill has been used on over 20+ projects. Here are some demo results
 
 
 ## Google Search Console demo result
-Here, this site was published 2 weeks ago; here is the result of how seo bots are perform. 
+This site was published 2 weeks ago; here are the SEO bot performance results.
 
 ![Google Search Console](assets/SearchConsole.png)
 
