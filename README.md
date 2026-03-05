@@ -1,6 +1,6 @@
 # ⚡ React Prerender DataCops
 
-![React Prerender DataCops - Zero-cost bot prerendering for AI-generated apps](edge-functions/Cover.png)
+![React Prerender DataCops - Zero-cost bot prerendering for AI-generated apps](assets/Cover.png)
 
 **Zero-cost bot prerendering for React SPAs. Make AI-generated apps crawlable in 30 minutes.**
 
@@ -11,6 +11,28 @@
 **Built by [DataCops](https://joindatacops.com)** — First-party analytics, bot filtering, and conversion APIs that recover the 15–60% of session data that ad blockers silently drop.
 
 ---
+## Demo
+This skill has been used on over 20+ projects. Here are some demo results/
+
+### ChatGPT
+
+![ChatGPT](assets/Chat-GPT.png)
+
+### Claude
+
+![Claude](assets/Claude.png)
+
+
+### Gemini
+
+![Gemini](assets/Gemini.png)
+
+
+## Google Search Console demo result
+Here, this site was published 2 weeks ago; here is the result of how seo bots are perform. 
+
+![Google Search Console](assets/Search Console.png)
+
 
 ## 🚨 The Problem
 
