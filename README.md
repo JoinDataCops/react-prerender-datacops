@@ -1,6 +1,6 @@
 # ⚡ React Prerender DataCops
 
-![React Prerender DataCops - Zero-cost bot prerendering for AI-generated apps](./assets/cover-image.png)
+![React Prerender DataCops - Zero-cost bot prerendering for AI-generated apps](edge-functions/Cover.png)
 
 **Zero-cost bot prerendering for React SPAs. Make AI-generated apps crawlable in 30 minutes.**
 
