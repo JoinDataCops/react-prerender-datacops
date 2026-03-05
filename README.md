@@ -12,7 +12,7 @@
 
 ---
 ## Demo
-This skill has been used on over 20+ projects. Here are some demo results/
+This skill has been used on over 20+ projects. Here are some demo results
 
 ### ChatGPT
 
@@ -31,7 +31,7 @@ This skill has been used on over 20+ projects. Here are some demo results/
 ## Google Search Console demo result
 Here, this site was published 2 weeks ago; here is the result of how seo bots are perform. 
 
-![Google Search Console](assets/Search Console.png)
+![Google Search Console](assets/SearchConsole.png)
 
 
 ## 🚨 The Problem
