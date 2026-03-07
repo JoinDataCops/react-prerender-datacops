@@ -76,7 +76,7 @@ Every single one delivers this to Google:
 
 **This solution:**
 - Add edge prerendering (10-30 minutes depends on your content volume)
-- Clouflara free hosting ($0)
+- Cloudflara free hosting ($0)
 - Zero new concepts
 
 **React does everything. This fills the crawler gap. Next.js is unnecessary.**
