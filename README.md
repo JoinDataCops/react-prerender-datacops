@@ -75,7 +75,7 @@ Every single one delivers this to Google:
 - Complex SSR/ISR/RSC concepts
 
 **This solution:**
-- Add edge prerendering (30 minutes)
+- Add edge prerendering (10-30 minutes depends on your content volume)
 - Any hosting ($0)
 - Zero new concepts
 
