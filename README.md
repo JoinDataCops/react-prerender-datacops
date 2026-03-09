@@ -2,7 +2,7 @@
 
 ![React Prerender DataCops - Zero-cost bot prerendering for AI-generated apps](assets/Cover.png)
 
-**Zero-cost bot prerendering for React SPAs. Make AI-generated apps crawlable in 30 minutes.**
+**Zero-cost bot prerendering for React SPAs. Make AI-generated apps crawlable in 10-30 minutes.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare)](https://workers.cloudflare.com/)
