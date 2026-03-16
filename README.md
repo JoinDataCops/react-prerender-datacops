@@ -34,6 +34,13 @@ This site was published 2 weeks ago; here are the SEO bot performance results.
 ![Google Search Console](assets/SearchConsole.png)
 
 
+## ⚡ Watch Full Tutorial
+
+[![▶ Watch Tutorial](https://img.shields.io/badge/▶%20Watch%20Full%20Tutorial-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/cAHtavqBz4A)
+
+[![Watch the tutorial](https://img.youtube.com/vi/cAHtavqBz4A/maxresdefault.jpg)](https://youtu.be/cAHtavqBz4A)
+
+
 ## 🚨 The Problem
 
 ### 1️⃣ AI Platforms Build Apps Crawlers Can't See
@@ -179,13 +186,12 @@ It has complete step-by-step instructions for:
 
 **Choose your stack. Follow the guide. Done in 30 minutes.**
 
+If you are confused, 
+follow this [![▶ Watch Tutorial](https://img.shields.io/badge/▶%20Watch%20Full%20Tutorial-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/cAHtavqBz4A)
+
 ---
 
-## ⚡ Watch Full Tutorial
 
-[![▶ Watch Tutorial](https://img.shields.io/badge/▶%20Watch%20Full%20Tutorial-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/cAHtavqBz4A)
-
-[![Watch the tutorial](https://img.youtube.com/vi/cAHtavqBz4A/maxresdefault.jpg)](https://youtu.be/cAHtavqBz4A)
 
 ### The 3 Steps
 
