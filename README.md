@@ -183,6 +183,8 @@ It has complete step-by-step instructions for:
 
 ## ⚡ Watch Full Tutorial
 
+[![▶ Watch Tutorial](https://img.shields.io/badge/▶%20Watch%20Full%20Tutorial-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/cAHtavqBz4A)
+
 [![Watch the tutorial](https://img.youtube.com/vi/cAHtavqBz4A/maxresdefault.jpg)](https://youtu.be/cAHtavqBz4A)
 
 ### The 3 Steps
