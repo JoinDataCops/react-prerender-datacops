@@ -169,9 +169,7 @@ Crawler visits site  →  Prerendered HTML from cache
 ---
 
 ## ⚡ Quick Start
-
 **For AI developers: Follow the `SKILL.md` guide.**
-
 It has complete step-by-step instructions for:
 - Supabase + PostgreSQL
 - Node.js + Express
@@ -180,6 +178,12 @@ It has complete step-by-step instructions for:
 - AWS Lambda + DynamoDB
 
 **Choose your stack. Follow the guide. Done in 30 minutes.**
+
+---
+
+## ⚡ Watch Full Tutorial
+
+[![Watch the tutorial](https://img.youtube.com/vi/cAHtavqBz4A/maxresdefault.jpg)](https://youtu.be/cAHtavqBz4A)
 
 ### The 3 Steps
 
