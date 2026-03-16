@@ -187,7 +187,10 @@ It has complete step-by-step instructions for:
 **Choose your stack. Follow the guide. Done in 30 minutes.**
 
 If you are confused, 
-follow this [![▶ Watch Tutorial](https://img.shields.io/badge/▶%20Watch%20Full%20Tutorial-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/cAHtavqBz4A)
+follow this
+
+[![▶ Watch Tutorial](https://img.shields.io/badge/▶%20Watch%20Full%20Tutorial-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/cAHtavqBz4A)
+
 
 ---
 
