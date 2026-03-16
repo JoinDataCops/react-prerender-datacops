@@ -36,9 +36,8 @@ This site was published 2 weeks ago; here are the SEO bot performance results.
 
 ## ⚡ Watch Full Tutorial
 
-[![▶ Watch Tutorial](https://img.shields.io/badge/▶%20Watch%20Full%20Tutorial-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/cAHtavqBz4A)
-
-[![Watch the tutorial](https://img.youtube.com/vi/cAHtavqBz4A/maxresdefault.jpg)](https://youtu.be/cAHtavqBz4A)
+[![▶ Watch Tutorial](https://img.shields.io/badge/▶%20Watch%20Full%20Tutorial-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/7fEOOdw27hI)
+[![Watch the tutorial](https://img.youtube.com/vi/7fEOOdw27hI/maxresdefault.jpg)](https://youtu.be/7fEOOdw27hI)
 
 
 ## 🚨 The Problem
@@ -189,7 +188,7 @@ It has complete step-by-step instructions for:
 If you are confused, 
 follow this
 
-[![▶ Watch Tutorial](https://img.shields.io/badge/▶%20Watch%20Full%20Tutorial-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/cAHtavqBz4A)
+[![▶ Watch Tutorial](https://img.shields.io/badge/▶%20Watch%20Full%20Tutorial-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/7fEOOdw27hI)
 
 
 ---
