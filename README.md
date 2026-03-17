@@ -77,7 +77,7 @@ Every single one delivers this to Google:
 
 **Next.js "solution":**
 - Rewrite entire app (2-4 weeks)
-- Vercel lock-in ($20-100/month)
+- Vercel lock-in
 - Complex SSR/ISR/RSC concepts
 
 **This solution:**
