@@ -65,7 +65,7 @@ Every single one delivers this to Google:
 **What React does** (everything AI apps need):
 
 | What AI Apps Need | React Vite | Next.js |
-|-------------------|-----------|---------|
+|-------------------|------------|---------|
 | Component logic | ✅ | ✅ |
 | State management | ✅ | ✅ |
 | Routing | ✅ | ✅ |
@@ -73,7 +73,8 @@ Every single one delivers this to Google:
 | Data fetching | ✅ | ✅ |
 | **Crawler HTML** | ❌ | ✅ |
 
-**The ONLY gap:** Crawlers need prerendered HTML.
+> 🎯 **Next.js adds exactly ONE thing React Vite doesn't have: Crawler HTML.**
+> That's SEO. That's marketing pages. **If your AI app doesn't need Google to index it — Next.js gives you zero extra value, plus weeks of migration and $20–100/mo in hosting costs.**
 
 **Next.js "solution":**
 - Rewrite entire app (2-4 weeks)
