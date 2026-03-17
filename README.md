@@ -64,13 +64,13 @@ Every single one delivers this to Google:
 
 **What React does** (everything AI apps need):
 
-| What AI Apps Need | React SPA | Next.js |
+| What AI Apps Need | React Vite | Next.js |
 |-------------------|-----------|---------|
 | Component logic | ✅ | ✅ |
 | State management | ✅ | ✅ |
-| Routing | ✅ (React Router) | ✅ |
-| Styling | ✅ (Tailwind) | ✅ |
-| Data fetching | ✅ (React Query) | ✅ |
+| Routing | ✅ | ✅ |
+| Styling | ✅ | ✅ |
+| Data fetching | ✅ | ✅ |
 | **Crawler HTML** | ❌ | ✅ |
 
 **The ONLY gap:** Crawlers need prerendered HTML.
