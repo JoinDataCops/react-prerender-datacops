@@ -1,0 +1,19 @@
+name = "my-pages-project"           # ← change to your Pages project name
+pages_build_output_dir = "dist"    # ← path to your SPA build output
+
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# ── Environment Variables ────────────────────────────────────────────────────
+# Set these in the Cloudflare Pages dashboard under Settings > Environment Variables
+# OR use `cf-prerender init` to configure them automatically.
+#
+# WORKER_URL     = "https://prerender-backend.<account>.workers.dev"
+# WORKER_SECRET  = "<generated-secret>"
+
+# ── Environments ─────────────────────────────────────────────────────────────
+[env.production]
+name = "my-pages-project"
+
+[env.preview]
+name = "my-pages-project"

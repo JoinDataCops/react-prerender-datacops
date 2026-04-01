@@ -1,0 +1,29 @@
+name = "prerender-backend"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# ── D1 Database ───────────────────────────────────────────────────────────────
+# Filled automatically by `npx prerender-edge init`
+[[d1_databases]]
+binding       = "DB"
+database_name = "prerender-db"
+database_id   = ""
+
+# ── Secrets (set via `npx prerender-edge deploy`) ────────────────────────────
+# WORKER_SECRET  — shared secret used by the Pages middleware
+# SITE_URL       — your production URL, e.g. https://mysite.com
+
+# ── Cron Trigger ─────────────────────────────────────────────────────────────
+# Runs generateCache() every hour — rebuild from your D1 data
+# Works on FREE plan. Edit src/routes/cron.ts to customize.
+[triggers]
+crons = ["0 * * * *"]
+
+# ── Optional: Browser Rendering (PAID PLAN ONLY) ─────────────────────────────
+# Uncomment below to enable on-demand rendering of uncached pages using
+# Cloudflare's headless Chrome. Requires Workers Paid plan ($5/month).
+# Without this, only proactive cron-based caching is used (which is fine).
+#
+# [[browser]]
+# binding = "BROWSER"
