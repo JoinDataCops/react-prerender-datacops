@@ -1,2 +1,3 @@
 /node_modules
 cloudflare/cli/node_modules
+cloudflare/workers/backend/node_modules
