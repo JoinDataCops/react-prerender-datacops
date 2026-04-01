@@ -1,0 +1,187 @@
+{
+  "_comment": "Put this file in your project's public/ folder. The prerender worker reads it on every cron run.",
+  "_docs": "https://github.com/JoinDataCops/react-prerender-datacops#prerender-contentjson",
+
+  "brand": "YOUR_BRAND",
+  "tagline": "Your site tagline for SEO",
+
+  "nav": [
+    { "label": "Home",     "href": "/" },
+    { "label": "Features", "href": "/features" },
+    { "label": "Pricing",  "href": "/pricing" },
+    { "label": "About",    "href": "/about" }
+  ],
+
+  "pages": {
+    "/": {
+      "title": "YOUR_BRAND — Your main value proposition",
+      "description": "One or two sentence description of what your product does. This goes in the meta description tag.",
+      "sections": [
+        {
+          "type": "hero",
+          "heading": "Your main headline here",
+          "subheading": "Your subheadline",
+          "text": "One paragraph of body copy that explains what you do and who you help.",
+          "cta": { "label": "Get Started Free", "href": "/signup" }
+        },
+        {
+          "type": "features",
+          "heading": "What we offer",
+          "items": [
+            { "title": "Feature One", "text": "What it does and why it matters" },
+            { "title": "Feature Two", "text": "What it does and why it matters" },
+            { "title": "Feature Three", "text": "What it does and why it matters" }
+          ]
+        },
+        {
+          "type": "cta",
+          "heading": "Ready to get started?",
+          "text": "Join thousands of teams already using YOUR_BRAND.",
+          "cta": { "label": "Start for free", "href": "/signup" }
+        }
+      ]
+    },
+
+    "/features": {
+      "title": "Features — YOUR_BRAND",
+      "description": "Everything YOUR_BRAND can do for your business.",
+      "sections": [
+        {
+          "type": "hero",
+          "heading": "Everything you need",
+          "text": "A short description of the features page."
+        },
+        {
+          "type": "features",
+          "heading": "Core features",
+          "items": [
+            { "title": "Feature 1", "text": "Description of feature 1" },
+            { "title": "Feature 2", "text": "Description of feature 2" },
+            { "title": "Feature 3", "text": "Description of feature 3" },
+            { "title": "Feature 4", "text": "Description of feature 4" }
+          ]
+        }
+      ]
+    },
+
+    "/pricing": {
+      "title": "Pricing — YOUR_BRAND",
+      "description": "Simple, transparent pricing. No hidden fees.",
+      "sections": [
+        {
+          "type": "hero",
+          "heading": "Simple, transparent pricing",
+          "text": "Start free, scale as you grow."
+        },
+        {
+          "type": "pricing",
+          "heading": "Choose your plan",
+          "tiers": [
+            {
+              "name": "Free",
+              "price": "$0",
+              "period": "month",
+              "features": [
+                "Up to X users",
+                "Core features",
+                "Community support"
+              ]
+            },
+            {
+              "name": "Pro",
+              "price": "$49",
+              "period": "month",
+              "features": [
+                "Unlimited users",
+                "All features",
+                "Priority support",
+                "Custom integrations"
+              ]
+            },
+            {
+              "name": "Enterprise",
+              "price": "Custom",
+              "features": [
+                "Everything in Pro",
+                "Dedicated account manager",
+                "SLA",
+                "Custom contracts"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "faq",
+          "heading": "Frequently asked questions",
+          "items": [
+            {
+              "question": "Can I change my plan later?",
+              "answer": "Yes, you can upgrade or downgrade at any time from your account settings."
+            },
+            {
+              "question": "Do you offer a free trial?",
+              "answer": "Yes, all paid plans include a 14-day free trial with no credit card required."
+            },
+            {
+              "question": "What payment methods do you accept?",
+              "answer": "We accept all major credit cards, PayPal, and bank transfers for annual plans."
+            }
+          ]
+        }
+      ]
+    },
+
+    "/about": {
+      "title": "About — YOUR_BRAND",
+      "description": "Learn about our mission, team, and story.",
+      "sections": [
+        {
+          "type": "hero",
+          "heading": "Our mission",
+          "text": "What drives your company."
+        },
+        {
+          "type": "text",
+          "heading": "Our story",
+          "paragraphs": [
+            "How and why your company was founded.",
+            "What problem you set out to solve.",
+            "Where you are today."
+          ]
+        }
+      ]
+    },
+
+    "/contact": {
+      "title": "Contact — YOUR_BRAND",
+      "description": "Get in touch with our team.",
+      "sections": [
+        {
+          "type": "hero",
+          "heading": "Get in touch",
+          "text": "We'd love to hear from you. Send us a message and we'll respond as soon as possible."
+        },
+        {
+          "type": "features",
+          "heading": "Ways to reach us",
+          "items": [
+            "Email: hello@yourdomain.com",
+            "Twitter: @YourBrand",
+            "Live chat on the website"
+          ]
+        }
+      ]
+    }
+  },
+
+  "fallback": {
+    "sections": [
+      {
+        "type": "text",
+        "paragraphs": [
+          "This page is part of YOUR_BRAND."
+        ]
+      }
+    ]
+  }
+}

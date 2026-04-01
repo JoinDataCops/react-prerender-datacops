@@ -22,7 +22,9 @@ import { migrateCommand } from './commands/migrate.js';
 import { statusCommand } from './commands/status.js';
 import { cacheRefreshCommand, cacheClearCommand, cacheStatsCommand } from './commands/cache.js';
 import { logsCommand } from './commands/logs.js';
-import { configurePagesCommand } from './commands/configure-pages.js';
+import { contentCommand } from './commands/content.js';
+import { scanCommand } from './commands/scan.js';
+import { prerenderCommand } from './commands/prerender.js';
 
 const program = new Command();
 
@@ -121,15 +123,33 @@ cache
   .description('Cache statistics and recent cron run history')
   .action(() => run(() => cacheStatsCommand()));
 
-// ── pages ─────────────────────────────────────────────────────────────────────
-const pagesCmd = program
-  .command('pages')
-  .description('Manage prerender page content (what bots see)');
+// ── prerender ─────────────────────────────────────────────────────────────────
+program
+  .command('prerender')
+  .description('Render all pages with real Chromium → upload full HTML to D1 (production-grade SSG)')
+  .option('--skip-build', 'Skip npm run build, use existing dist/')
+  .option('--dist <dir>', 'Build output directory (default: auto-detect dist/, build/, out/)')
+  .option('--port <port>', 'Local server port (default: 3997)', (v) => parseInt(v))
+  .option('--selector <css>', 'CSS selector to wait for before capturing (default: #root > *)')
+  .option('--timeout <seconds>', 'Seconds to wait for render per page (default: 15)', (v) => parseInt(v))
+  .option('--concurrency <n>', 'Pages to render in parallel (default: 3)', (v) => parseInt(v))
+  .option('--ttl-hours <n>', 'Cache TTL in hours (default: 24)', (v) => parseInt(v))
+  .option('--no-browser', 'Skip Chromium — scan source + build output to generate HTML (no puppeteer needed)')
+  .action((opts) => run(() => prerenderCommand({ ...opts, noBrowser: opts.browser === false })));
 
-pagesCmd
-  .command('configure')
-  .description('Run the page wizard to set titles, descriptions & content, then redeploy')
-  .action(() => run(() => configurePagesCommand()));
+// ── scan ──────────────────────────────────────────────────────────────────────
+program
+  .command('scan')
+  .description('Auto-scan React/Vue/Svelte source files → extract text → write public/prerender-content.json')
+  .option('--silent', 'No interactive prompts (for use in build scripts)')
+  .option('--output <dir>', 'Output directory (default: public/)')
+  .action((opts) => run(() => scanCommand(opts)));
+
+// ── content ───────────────────────────────────────────────────────────────────
+program
+  .command('content')
+  .description('Generate a starter prerender-content.json template (edit manually)')
+  .action(() => run(() => contentCommand()));
 
 // ── logs ──────────────────────────────────────────────────────────────────────
 program

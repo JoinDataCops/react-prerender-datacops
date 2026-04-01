@@ -1,10 +1,19 @@
 {
   "name": "prerender-edge",
-  "version": "1.1.3",
+  "version": "1.2.4",
   "description": "CLI to set up a zero-dependency prerender + sitemaps + script injection stack on Cloudflare (D1 + Workers) or Supabase (Postgres + Edge Functions)",
   "keywords": [
-    "prerender", "seo", "cloudflare", "supabase", "d1", "workers",
-    "bot-detection", "sitemap", "edge-functions", "react", "spa"
+    "prerender",
+    "seo",
+    "cloudflare",
+    "supabase",
+    "d1",
+    "workers",
+    "bot-detection",
+    "sitemap",
+    "edge-functions",
+    "react",
+    "spa"
   ],
   "author": "DataCops Team",
   "license": "MIT",
@@ -35,11 +44,13 @@
     "chalk": "^5.3.0",
     "commander": "^12.1.0",
     "conf": "^13.0.0",
+    "happy-dom": "^17.6.3",
     "open": "^10.1.0",
     "ora": "^8.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "puppeteer": "^24.40.0",
     "tsx": "^4.16.0",
     "typescript": "^5.5.0"
   },

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)",
+      "Bash(npm install:*)",
+      "Bash(node -e \"const p=require\\(''./package.json''\\); console.log\\(''name:'', p.name\\); console.log\\(''version:'', p.version\\); console.log\\(''bin:'', JSON.stringify\\(p.bin\\)\\); console.log\\(''files:'', JSON.stringify\\(p.files\\)\\); console.log\\(''deps:'', Object.keys\\(p.dependencies\\).join\\('', ''\\)\\); console.log\\(''type:'', p.type\\);\")",
+      "Bash(node dist/index.js --help)",
+      "Bash(node dist/index.js prerender --help)",
+      "Bash(npm pack:*)",
+      "Bash(node -e \":*)"
+    ]
+  }
+}

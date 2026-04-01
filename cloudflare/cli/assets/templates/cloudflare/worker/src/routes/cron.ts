@@ -7,31 +7,24 @@
  *
  * ── How it works (FREE PLAN) ─────────────────────────────────────────────────
  *
- * 1. Fetches your live site's /sitemap.xml  → discovers every page URL
- * 2. For each URL, fetches the actual live page  → reads <title>, <meta>, <og:>
- *    tags directly from your real HTML (the same tags your SPA sets via
- *    react-helmet / @vueuse/head / document.title, etc.)
- * 3. Builds a complete, standards-compliant HTML document  → stores in D1
- * 4. Bot visits → middleware serves this cached HTML instantly
+ * 1. Fetches SITE_URL/prerender-content.json  → your page content definitions
+ *    (drop this file in your public/ folder — no worker redeployment needed)
+ * 2. Fetches your live site's /sitemap.xml  → discovers every page URL
+ * 3. For each URL, reads <title>/<meta> from live site + content from JSON
+ * 4. Builds a complete, standards-compliant HTML document  → stores in D1
+ * 5. Bot visits → middleware serves this cached HTML instantly
  *
- * No headless browser needed. No manual content entry. Works on free plan.
+ * No headless browser. No manual TypeScript editing. Works on free plan.
  *
- * ── What if my SPA doesn't set per-page meta? ────────────────────────────────
- * If your app uses react-helmet / react-router with dynamic titles, the static
- * shell at each URL already has the correct <title> and <meta> in the HTML
- * (set by your bundler / build tool in index.html).
+ * ── prerender-content.json ────────────────────────────────────────────────────
+ * Put this file in your project's public/ folder.
+ * The worker fetches it automatically on every cron run.
  *
- * If every page returns the SAME title (common with plain Vite/CRA), the
- * worker derives a per-page title from the URL path automatically.
- * e.g.  /pricing  →  "Pricing — YourBrand"
+ * Run:  prerender-edge content  to get a starter template for your site.
  *
  * ── Dynamic pages from your DB ────────────────────────────────────────────────
  * If you have database-driven pages (blog posts, products, etc.) that aren't
  * in your sitemap, add them in buildDynamicPages() below.
- *
- * ── Optional: on-demand rendering (Paid plan) ─────────────────────────────────
- * Uncomment the [[browser]] binding in wrangler.toml for headless Chrome
- * rendering on cache miss — but this is NOT required for the free plan.
  */
 
 import type { Env } from '../index.js';
@@ -47,7 +40,46 @@ import {
 const JOB_NAME = 'prerender-cache-refresh';
 const CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
 const FETCH_TIMEOUT_MS = 8_000;
-const MAX_PAGES_PER_RUN = 500; // guard against huge sitemaps
+const MAX_PAGES_PER_RUN = 500;
+
+// ── prerender-content.json schema ──────────────────────────────────────────────
+//
+// This is what the user puts in their public/ folder.
+// All fields are optional — the worker fills in gaps from live meta tags.
+//
+interface ContentJson {
+  brand?: string;
+  tagline?: string;
+  nav?: Array<{ label: string; href: string }>;
+  pages?: Record<string, PageContent>;
+  /** Applied to any page not listed in `pages` */
+  fallback?: PageContent;
+}
+
+interface PageContent {
+  title?: string;
+  description?: string;
+  sections?: Section[];
+}
+
+type Section =
+  | HeroSection
+  | TextSection
+  | FeaturesSection
+  | PricingSection
+  | FaqSection
+  | CtaSection
+  | TableSection
+  | StepsSection;
+
+interface HeroSection     { type: 'hero';     heading: string; subheading?: string; text?: string; cta?: { label: string; href: string } }
+interface TextSection     { type: 'text';     heading?: string; paragraphs: string[] }
+interface FeaturesSection { type: 'features'; heading?: string; items: string[] | Array<{ title: string; text?: string }> }
+interface PricingSection  { type: 'pricing';  heading?: string; tiers: Array<{ name: string; price: string; period?: string; features?: string[] }> }
+interface FaqSection      { type: 'faq';      heading?: string; items: Array<{ question: string; answer: string }> }
+interface CtaSection      { type: 'cta';      heading: string; text?: string; cta?: { label: string; href: string } }
+interface TableSection    { type: 'table';    heading?: string; headers: string[]; rows: string[][] }
+interface StepsSection    { type: 'steps';    heading?: string; steps: Array<{ title: string; text?: string }> }
 
 // ── Route handlers ─────────────────────────────────────────────────────────────
 
@@ -93,48 +125,50 @@ export async function generateCache(
 
   try {
     const siteUrl = (env.SITE_URL || '').replace(/\/$/, '');
-    if (!siteUrl) {
-      throw new Error('SITE_URL env var is not set');
+    if (!siteUrl) throw new Error('SITE_URL env var is not set');
+
+    // ── Step 1: Fetch prerender-content.json (user's content definitions) ────
+    const contentJson = await fetchContentJson(siteUrl);
+    if (contentJson) {
+      console.log(`[cron] loaded prerender-content.json (${Object.keys(contentJson.pages ?? {}).length} page defs)`);
+    } else {
+      console.log('[cron] no prerender-content.json found — using auto-generated content');
     }
 
-    // ── Step 1: Fetch global site metadata from the live homepage ────────────
+    // ── Step 2: Fetch global site metadata from the live homepage ─────────────
     const siteMeta = await fetchPageMeta(siteUrl, '/');
-    console.log(`[cron] site: ${siteUrl}  title: "${siteMeta.title}"`);
+    const brand = contentJson?.brand ?? brandFromTitle(siteMeta.title);
+    console.log(`[cron] site: ${siteUrl}  brand: "${brand}"`);
 
-    // ── Step 2: Discover all pages from sitemap ──────────────────────────────
+    // ── Step 3: Discover all pages from sitemap ───────────────────────────────
     const sitemapPaths = await discoverSitemapPaths(siteUrl);
     console.log(`[cron] sitemap discovered ${sitemapPaths.length} paths`);
 
-    // ── Step 3: Add dynamic DB pages ────────────────────────────────────────
-    const dynamicPages = await buildDynamicPages(env, siteUrl, siteMeta);
+    // ── Step 4: Add dynamic DB pages ─────────────────────────────────────────
+    const dynamicPages = await buildDynamicPages(env, siteUrl, siteMeta, contentJson);
     const dynamicPaths = new Set(dynamicPages.map((p) => p.path));
     console.log(`[cron] ${dynamicPages.length} dynamic pages from DB`);
 
-    // ── Step 4: Build page list — sitemap paths first, then dynamic ──────────
+    // ── Step 5: Build full page list ──────────────────────────────────────────
     const allPaths: string[] = [
       ...sitemapPaths.filter((p) => !dynamicPaths.has(p)),
       ...dynamicPages.map((p) => p.path),
     ].slice(0, MAX_PAGES_PER_RUN);
 
-    // Ensure homepage is always included
     if (!allPaths.includes('/')) allPaths.unshift('/');
 
     console.log(`[cron] building cache for ${allPaths.length} pages`);
 
-    // ── Step 5: Generate + store HTML for every page ─────────────────────────
+    // ── Step 6: Generate + store HTML for every page ──────────────────────────
     for (const path of allPaths) {
-      // Skip fresh cache unless force=true
       if (!force) {
         try {
           const existing = await getPrerenderedPage(env.DB, path);
-          if (existing?.html && existing.expires_at && new Date(existing.expires_at) > new Date()) {
-            continue;
-          }
+          if (existing?.html && existing.expires_at && new Date(existing.expires_at) > new Date()) continue;
         } catch {}
       }
 
       try {
-        // Check if this is a dynamic page (already has HTML built)
         const dynamic = dynamicPages.find((p) => p.path === path);
         if (dynamic) {
           await upsertPrerenderedPage(env.DB, {
@@ -148,25 +182,33 @@ export async function generateCache(
           continue;
         }
 
-        // For sitemap-discovered pages: fetch live metadata + build HTML
+        // Resolve content: prerender-content.json page def  OR  auto-generated
+        const pageDef = contentJson?.pages?.[path] ?? contentJson?.fallback;
         const meta = await fetchPageMeta(siteUrl, path, siteMeta);
+
+        const title = pageDef?.title ?? meta.title;
+        const description = pageDef?.description ?? meta.description;
+        const content = buildPageBody(path, title, description, siteUrl, brand, pageDef, contentJson);
+
         const html = generateHtmlPage({
           path,
           siteUrl,
-          title: meta.title,
-          description: meta.description,
+          title,
+          description,
           ogImage: meta.ogImage || siteMeta.ogImage,
           themeColor: meta.themeColor || siteMeta.themeColor,
           favicon: siteMeta.favicon,
-          content: `<h1>${esc(meta.title)}</h1>`,
-          schemas: buildSchemas(path, meta.title, meta.description, siteUrl),
+          brand,
+          nav: contentJson?.nav,
+          content,
+          schemas: buildSchemas(path, title, description, siteUrl, brand),
         });
 
         await upsertPrerenderedPage(env.DB, {
           path,
           html,
-          title: meta.title,
-          description: meta.description,
+          title,
+          description,
           expires_at: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
         });
         pagesSynced++;
@@ -198,13 +240,173 @@ export async function generateCache(
   }
 }
 
+// ── Fetch prerender-content.json ───────────────────────────────────────────────
+
+async function fetchContentJson(siteUrl: string): Promise<ContentJson | null> {
+  try {
+    const res = await fetch(`${siteUrl}/prerender-content.json`, {
+      headers: { 'User-Agent': 'prerender-edge/1.0 (content-reader)', Accept: 'application/json' },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+    if (!res.ok) return null;
+    const data = await res.json<ContentJson>();
+    return data && typeof data === 'object' ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+// ── Build page HTML body ────────────────────────────────────────────────────────
+
+function buildPageBody(
+  path: string,
+  title: string,
+  description: string,
+  siteUrl: string,
+  brand: string,
+  pageDef: PageContent | undefined,
+  contentJson: ContentJson | null,
+): string {
+  // If user provided sections for this page → render them (like the old edge function content generators)
+  if (pageDef?.sections && pageDef.sections.length > 0) {
+    return renderSections(pageDef.sections, siteUrl);
+  }
+
+  // Auto-generate: split description into sentences, make a readable article
+  const sentences = description
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 8);
+
+  const paragraphs = sentences.length > 0
+    ? sentences.map((s) => `<p>${esc(s)}</p>`).join('\n      ')
+    : `<p>${esc(description)}</p>`;
+
+  const isHome = path === '/';
+  const navLinks = (contentJson?.nav ?? [])
+    .map((n) => `<a href="${esc(n.href)}">${esc(n.label)}</a>`)
+    .join('\n        ');
+
+  return `<article>
+      <header>
+        <h1>${esc(title)}</h1>
+        ${isHome && contentJson?.tagline ? `<p class="tagline">${esc(contentJson.tagline)}</p>` : ''}
+      </header>
+      <section>
+        ${paragraphs}
+      </section>
+      ${isHome && navLinks ? `<nav aria-label="Site pages">\n        ${navLinks}\n      </nav>` : ''}
+    </article>`;
+}
+
+// ── Section renderers (same idea as the old edge function content generators) ──
+
+function renderSections(sections: Section[], siteUrl: string): string {
+  return sections.map((s) => renderSection(s, siteUrl)).join('\n  ');
+}
+
+function renderSection(s: Section, siteUrl: string): string {
+  switch (s.type) {
+    case 'hero': {
+      const cta = s.cta ? `\n      <a href="${esc(s.cta.href)}">${esc(s.cta.label)}</a>` : '';
+      return `<section class="hero">
+      <h1>${esc(s.heading)}</h1>
+      ${s.subheading ? `<h2>${esc(s.subheading)}</h2>` : ''}
+      ${s.text ? `<p>${esc(s.text)}</p>` : ''}${cta}
+    </section>`;
+    }
+
+    case 'text': {
+      const paras = s.paragraphs.map((p) => `<p>${esc(p)}</p>`).join('\n      ');
+      return `<section>
+      ${s.heading ? `<h2>${esc(s.heading)}</h2>` : ''}
+      ${paras}
+    </section>`;
+    }
+
+    case 'features': {
+      const items = s.items.map((item) =>
+        typeof item === 'string'
+          ? `<li>${esc(item)}</li>`
+          : `<li><strong>${esc(item.title)}</strong>${item.text ? ` — ${esc(item.text)}` : ''}</li>`,
+      ).join('\n        ');
+      return `<section class="features">
+      ${s.heading ? `<h2>${esc(s.heading)}</h2>` : ''}
+      <ul>
+        ${items}
+      </ul>
+    </section>`;
+    }
+
+    case 'pricing': {
+      const tiers = s.tiers.map((t) => {
+        const feats = (t.features ?? []).map((f) => `<li>${esc(f)}</li>`).join('');
+        return `<div class="tier">
+          <h3>${esc(t.name)}</h3>
+          <p class="price">${esc(t.price)}${t.period ? `<span>/${esc(t.period)}</span>` : ''}</p>
+          ${feats ? `<ul>${feats}</ul>` : ''}
+        </div>`;
+      }).join('\n        ');
+      return `<section class="pricing">
+      ${s.heading ? `<h2>${esc(s.heading)}</h2>` : ''}
+      <div class="pricing-grid">
+        ${tiers}
+      </div>
+    </section>`;
+    }
+
+    case 'faq': {
+      const faqs = s.items.map((item) =>
+        `<dt>${esc(item.question)}</dt>\n        <dd>${esc(item.answer)}</dd>`,
+      ).join('\n        ');
+      return `<section class="faq">
+      ${s.heading ? `<h2>${esc(s.heading)}</h2>` : ''}
+      <dl>
+        ${faqs}
+      </dl>
+    </section>`;
+    }
+
+    case 'cta': {
+      const cta = s.cta ? `\n      <a href="${esc(s.cta.href)}">${esc(s.cta.label)}</a>` : '';
+      return `<section class="cta">
+      <h2>${esc(s.heading)}</h2>
+      ${s.text ? `<p>${esc(s.text)}</p>` : ''}${cta}
+    </section>`;
+    }
+
+    case 'table': {
+      const headers = s.headers.map((h) => `<th>${esc(h)}</th>`).join('');
+      const rows = s.rows.map((row) =>
+        `<tr>${row.map((cell) => `<td>${esc(cell)}</td>`).join('')}</tr>`,
+      ).join('\n        ');
+      return `<section class="table-section">
+      ${s.heading ? `<h2>${esc(s.heading)}</h2>` : ''}
+      <table>
+        <thead><tr>${headers}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </section>`;
+    }
+
+    case 'steps': {
+      const steps = s.steps.map((step, i) =>
+        `<li><strong>Step ${i + 1}: ${esc(step.title)}</strong>${step.text ? ` — ${esc(step.text)}` : ''}</li>`,
+      ).join('\n        ');
+      return `<section class="steps">
+      ${s.heading ? `<h2>${esc(s.heading)}</h2>` : ''}
+      <ol>
+        ${steps}
+      </ol>
+    </section>`;
+    }
+
+    default:
+      return '';
+  }
+}
+
 // ── ✏️  OPTIONAL: Add DB-driven dynamic pages ──────────────────────────────────
-//
-// If you have pages that aren't in your sitemap (e.g. /blog/[slug], /market/[id])
-// add them here by querying your D1 tables.
-//
-// The worker already handles sitemap-discovered pages automatically.
-// Only add here if those pages are NOT in your sitemap.xml.
 
 interface PageData {
   path: string;
@@ -217,6 +419,7 @@ async function buildDynamicPages(
   env: Env,
   siteUrl: string,
   siteMeta: PageMeta,
+  contentJson: ContentJson | null,
 ): Promise<PageData[]> {
   const pages: PageData[] = [];
 
@@ -228,6 +431,7 @@ async function buildDynamicPages(
   //     .bind('published')
   //     .all<{ slug: string; title: string; excerpt: string }>();
   //
+  //   const brand = contentJson?.brand ?? brandFromTitle(siteMeta.title);
   //   for (const post of results) {
   //     const path = `/blog/${post.slug}`;
   //     pages.push({
@@ -235,12 +439,12 @@ async function buildDynamicPages(
   //       title: post.title,
   //       description: post.excerpt,
   //       html: generateHtmlPage({
-  //         path,
-  //         siteUrl,
+  //         path, siteUrl,
   //         title: post.title,
   //         description: post.excerpt,
   //         ogImage: siteMeta.ogImage,
   //         favicon: siteMeta.favicon,
+  //         brand,
   //         content: `<article><h1>${esc(post.title)}</h1><p>${esc(post.excerpt)}</p></article>`,
   //         schemas: [{
   //           '@context': 'https://schema.org',
@@ -267,17 +471,9 @@ interface PageMeta {
   ogImage: string;
   favicon: string;
   themeColor: string;
-  /** True if the page returns a non-generic title (per-page meta is set) */
   hasCustomTitle: boolean;
 }
 
-/**
- * Fetches the live page and extracts all <meta> tags.
- * Falls back to deriving the page name from the URL path.
- *
- * For pure SPAs (Vite/CRA), every route returns the same index.html.
- * In that case `homeMeta` is passed and the title is derived from the path.
- */
 async function fetchPageMeta(
   siteUrl: string,
   path: string,
@@ -287,10 +483,7 @@ async function fetchPageMeta(
 
   try {
     const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'prerender-edge/1.0 (cache-builder)',
-        'Accept': 'text/html',
-      },
+      headers: { 'User-Agent': 'prerender-edge/1.0 (cache-builder)', Accept: 'text/html' },
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
 
@@ -298,10 +491,7 @@ async function fetchPageMeta(
     const html = await res.text();
 
     const title = extractMeta(html, 'title') || extractMeta(html, 'og:title') || '';
-    const description =
-      extractMeta(html, 'description') ||
-      extractMeta(html, 'og:description') ||
-      '';
+    const description = extractMeta(html, 'description') || extractMeta(html, 'og:description') || '';
     const ogImage =
       extractMeta(html, 'og:image') ||
       extractMeta(html, 'twitter:image') ||
@@ -309,10 +499,7 @@ async function fetchPageMeta(
     const favicon = extractFavicon(html, siteUrl);
     const themeColor = extractMeta(html, 'theme-color') || '';
 
-    // Detect if this is a per-page title or the generic homepage title
     const isGeneric = homeMeta ? title === homeMeta.title : false;
-
-    // For SPAs: if every route returns the same title, derive per-page title from path
     const finalTitle =
       isGeneric && path !== '/'
         ? `${pathToLabel(path)} — ${brandFromTitle(homeMeta?.title || title)}`
@@ -328,7 +515,6 @@ async function fetchPageMeta(
     };
   } catch (err) {
     console.warn(`[cron] fetchPageMeta failed for ${path}:`, err);
-    // Fallback: use home meta + derive title from path
     return {
       title:
         path === '/'
@@ -356,9 +542,7 @@ async function discoverSitemapPaths(siteUrl: string): Promise<string[]> {
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       });
       return res.ok ? res.text() : null;
-    } catch {
-      return null;
-    }
+    } catch { return null; }
   };
 
   const addLoc = (loc: string) => {
@@ -373,7 +557,6 @@ async function discoverSitemapPaths(siteUrl: string): Promise<string[]> {
     if (!text) continue;
 
     if (text.includes('<sitemapindex')) {
-      // sitemap index: collect child sitemaps
       const childUrls = [...text.matchAll(/<loc>\s*([^<]+)\s*<\/loc>/g)].map((m) => m[1].trim());
       for (const childUrl of childUrls) {
         const childText = await tryFetch(childUrl);
@@ -393,7 +576,7 @@ async function discoverSitemapPaths(siteUrl: string): Promise<string[]> {
   return paths;
 }
 
-// ── HTML generator ─────────────────────────────────────────────────────────────
+// ── HTML page generator ────────────────────────────────────────────────────────
 
 function generateHtmlPage(opts: {
   path: string;
@@ -401,6 +584,8 @@ function generateHtmlPage(opts: {
   title: string;
   description: string;
   content: string;
+  brand?: string;
+  nav?: Array<{ label: string; href: string }>;
   ogImage?: string;
   favicon?: string;
   themeColor?: string;
@@ -410,9 +595,8 @@ function generateHtmlPage(opts: {
   const canonical = `${siteUrl}${opts.path}`;
   const ogImage = opts.ogImage ?? `${siteUrl}/og-image.png`;
   const favicon = opts.favicon ?? `${siteUrl}/favicon.ico`;
-  const desc = opts.description.length > 160
-    ? opts.description.slice(0, 157) + '...'
-    : opts.description;
+  const desc = opts.description.length > 160 ? opts.description.slice(0, 157) + '...' : opts.description;
+  const brand = opts.brand ?? brandFromTitle(opts.title);
 
   const schemaScripts = (opts.schemas ?? [])
     .map((s) => `  <script type="application/ld+json">${JSON.stringify(s)}</script>`)
@@ -420,6 +604,12 @@ function generateHtmlPage(opts: {
 
   const themeColorMeta = opts.themeColor
     ? `\n  <meta name="theme-color" content="${esc(opts.themeColor)}">`
+    : '';
+
+  const navHtml = opts.nav && opts.nav.length > 0
+    ? `\n  <header>\n    <nav aria-label="Main navigation">\n      ${
+        opts.nav.map((n) => `<a href="${esc(n.href)}">${esc(n.label)}</a>`).join('\n      ')
+      }\n    </nav>\n  </header>`
     : '';
 
   return `<!DOCTYPE html>
@@ -438,6 +628,7 @@ function generateHtmlPage(opts: {
   <meta property="og:image" content="${ogImage}">
   <meta property="og:url" content="${canonical}">
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="${esc(brand)}">
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
@@ -451,10 +642,13 @@ function generateHtmlPage(opts: {
 
 ${schemaScripts}
 </head>
-<body>
+<body>${navHtml}
   <main id="content">
     ${opts.content}
   </main>
+  <footer>
+    <p>&copy; ${new Date().getFullYear()} ${esc(brand)}. All rights reserved.</p>
+  </footer>
 </body>
 </html>`;
 }
@@ -466,39 +660,51 @@ function buildSchemas(
   title: string,
   description: string,
   siteUrl: string,
+  brand: string,
 ): object[] {
   if (path === '/') {
-    return [
-      {
-        '@context': 'https://schema.org',
-        '@type': 'WebSite',
-        name: brandFromTitle(title),
-        url: siteUrl,
-        description,
-      },
-    ];
+    return [{
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: brand,
+      url: siteUrl,
+      description,
+    }];
   }
-  return [
-    {
+
+  if (path.includes('pricing') || path.includes('plan')) {
+    return [{
       '@context': 'https://schema.org',
       '@type': 'WebPage',
       name: title,
       description,
       url: `${siteUrl}${path}`,
-    },
-  ];
+      breadcrumb: {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: brand, item: siteUrl },
+          { '@type': 'ListItem', position: 2, name: pathToLabel(path), item: `${siteUrl}${path}` },
+        ],
+      },
+    }];
+  }
+
+  return [{
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: title,
+    description,
+    url: `${siteUrl}${path}`,
+  }];
 }
 
 // ── HTML parsing helpers ───────────────────────────────────────────────────────
 
 function extractMeta(html: string, name: string): string {
-  // <title>...</title>
   if (name === 'title') {
     const m = html.match(/<title[^>]*>([^<]+)<\/title>/i);
     return m ? m[1].trim() : '';
   }
-
-  // <meta name="..." content="...">  or  <meta property="..." content="...">
   const patterns = [
     new RegExp(`<meta[^>]+(?:name|property)=["']${escapeRegex(name)}["'][^>]+content=["']([^"']+)["']`, 'i'),
     new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:name|property)=["']${escapeRegex(name)}["']`, 'i'),
@@ -515,8 +721,7 @@ function extractFavicon(html: string, siteUrl: string): string {
     || html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["'](?:icon|shortcut icon)["']/i);
   if (!m) return `${siteUrl}/favicon.ico`;
   const href = m[1];
-  if (href.startsWith('http')) return href;
-  return `${siteUrl}/${href.replace(/^\//, '')}`;
+  return href.startsWith('http') ? href : `${siteUrl}/${href.replace(/^\//, '')}`;
 }
 
 function pathToLabel(path: string): string {
@@ -531,8 +736,6 @@ function pathToLabel(path: string): string {
 }
 
 function brandFromTitle(title: string): string {
-  // "DataCops | The Cleanest..." → "DataCops"
-  // "PillarLab AI - Chat With..." → "PillarLab AI"
   const m = title.match(/^([^|—\-]+)/);
   return m ? m[1].trim() : title;
 }

@@ -20,6 +20,8 @@ import { getApiToken, setProject, getProject } from '../lib/config.js';
 import { loginCommand } from './login.js';
 import { deployCommand } from './deploy.js';
 import { deploySiteCommand } from './deploy-site.js';
+import { scanCommand } from './scan.js';
+import { prerenderCommand } from './prerender.js';
 import {
   listAccounts, listD1Databases, createD1Database,
   executeD1Sql, listPagesProjects, updatePagesEnvVars,
@@ -396,8 +398,8 @@ export async function initCloudflare(opts: { force?: boolean }): Promise<void> {
   const deployWorker = await confirm({ message: 'Deploy the worker now?', default: true });
   if (deployWorker) {
     await deployCommand({ workerSecret, workerDir });
-    // Trigger initial cache: worker fetches sitemap + live meta, builds HTML automatically
-    await triggerInitialCache(workerUrl, workerSecret, siteUrl);
+    // Choose cache generation strategy
+    await runCacheSetup(workerUrl, workerSecret, siteUrl);
   } else {
     console.log(chalk.dim(`\n  When ready: prerender-edge deploy\n`));
   }
@@ -725,6 +727,87 @@ function showEnvInstructions(
   console.log(chalk.dim('  Once added, the middleware will automatically use your worker.\n'));
 }
 
+// ── Cache generation strategy picker ─────────────────────────────────────────
+
+async function runCacheSetup(
+  workerUrl: string,
+  workerSecret: string,
+  siteUrl: string,
+): Promise<void> {
+  console.log('\n' + chalk.bold('  How should bots see your pages?\n'));
+  console.log(chalk.dim('  Choose how the prerender cache gets populated:\n'));
+
+  const strategy = await select({
+    message: 'Cache generation strategy:',
+    choices: [
+      {
+        name: chalk.bold('Full browser render') + chalk.dim(' — Chromium renders your React app locally, captures real DOM (recommended)'),
+        value: 'puppeteer',
+      },
+      {
+        name: chalk.bold('SSG mode (happy-dom)') + chalk.dim(' — runs React in Node.js like Next.js SSG, no Chromium needed (best without browser)'),
+        value: 'no-browser',
+      },
+      {
+        name: chalk.bold('Scan source files only') + chalk.dim(' — extract text from .tsx/.jsx files → prerender-content.json'),
+        value: 'scan',
+      },
+      {
+        name: chalk.bold('Auto from sitemap') + chalk.dim(' — worker fetches sitemap + meta tags, basic content only'),
+        value: 'cron',
+      },
+      {
+        name: 'Skip for now',
+        value: 'skip',
+      },
+    ],
+  });
+
+  if (strategy === 'puppeteer') {
+    console.log(chalk.dim('\n  This will build your project and render each page with real Chromium.'));
+    console.log(chalk.dim('  Result: bots get 100% real HTML — exactly what your users see.\n'));
+    try {
+      await prerenderCommand({ skipBuild: false });
+    } catch (err) {
+      console.log(chalk.yellow('\n  ⚠ Browser render failed — falling back to SSG mode (happy-dom).'));
+      console.log(chalk.dim(`    ${(err as Error).message}\n`));
+      console.log(chalk.dim('  SSG mode: executes your React app in Node.js — same result, no Chromium.\n'));
+      try {
+        await prerenderCommand({ skipBuild: true, noBrowser: true });
+      } catch (err2) {
+        console.log(chalk.yellow(`\n  ⚠ No-browser render also failed — falling back to sitemap-based cache.`));
+        console.log(chalk.dim(`    ${(err2 as Error).message}\n`));
+        await triggerInitialCache(workerUrl, workerSecret, siteUrl);
+      }
+    }
+  } else if (strategy === 'no-browser') {
+    console.log(chalk.dim('\n  SSG mode: executes your React app in Node.js (happy-dom) — like Next.js SSG.'));
+    console.log(chalk.dim('  Result: bots get the real rendered DOM — same content your users see.\n'));
+    try {
+      await prerenderCommand({ skipBuild: false, noBrowser: true });
+    } catch (err) {
+      console.log(chalk.yellow('\n  ⚠ No-browser render failed — falling back to sitemap-based cache.'));
+      console.log(chalk.dim(`    ${(err as Error).message}\n`));
+      await triggerInitialCache(workerUrl, workerSecret, siteUrl);
+    }
+  } else if (strategy === 'scan') {
+    console.log(chalk.dim('\n  Scanning source files for text content...\n'));
+    try {
+      await scanCommand({ silent: false });
+    } catch (err) {
+      console.log(chalk.yellow('  ⚠ Scan failed — continuing with basic cache.'));
+      console.log(chalk.dim(`    ${(err as Error).message}\n`));
+    }
+    await triggerInitialCache(workerUrl, workerSecret, siteUrl);
+  } else if (strategy === 'cron') {
+    await triggerInitialCache(workerUrl, workerSecret, siteUrl);
+  } else {
+    console.log(chalk.dim('\n  Skipped. Run later:'));
+    console.log(chalk.cyan('    prerender-edge prerender') + chalk.dim('  ← full browser render (recommended)'));
+    console.log(chalk.cyan('    prerender-edge cache refresh') + chalk.dim('  ← sitemap-based\n'));
+  }
+}
+
 // ── Initial cache trigger ─────────────────────────────────────────────────────
 
 async function triggerInitialCache(
@@ -732,9 +815,9 @@ async function triggerInitialCache(
   workerSecret: string,
   siteUrl: string,
 ): Promise<void> {
-  console.log('\n' + chalk.bold('  Triggering initial cache generation...\n'));
-  console.log(chalk.dim(`  The worker will fetch your sitemap at ${siteUrl}/sitemap.xml`));
-  console.log(chalk.dim('  and render each page using Cloudflare Browser Rendering.\n'));
+  console.log('\n' + chalk.bold('  Generating prerender cache...\n'));
+  console.log(chalk.dim(`  Worker will fetch ${siteUrl}/sitemap.xml → discover all pages`));
+  console.log(chalk.dim(`  + read prerender-content.json (if in public/) → build full HTML\n`));
 
   const s = ora('Starting cache generation (this runs in the background)...').start();
 

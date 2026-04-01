@@ -69,7 +69,37 @@ export async function handlePrerender(
     return json({ error: 'not_cached', path }, 404, { 'X-Cache': 'miss' });
   }
 
-  // ── POST: manually push HTML into cache ────────────────────────────────────
+  // ── POST /api/prerender/import — bulk upload from CLI prerender command ───────
+  if (req.method === 'POST' && url.pathname === '/api/prerender/import') {
+    const body = await req.json<{
+      pages: Array<{ path: string; html: string; title?: string; description?: string }>;
+      ttl_hours?: number;
+    }>();
+
+    if (!Array.isArray(body.pages) || body.pages.length === 0) {
+      return json({ error: 'pages array is required' }, 400);
+    }
+
+    const ttlMs = (body.ttl_hours ?? 24) * 60 * 60 * 1000;
+    const expiresAt = new Date(Date.now() + ttlMs).toISOString();
+    let imported = 0;
+
+    for (const page of body.pages) {
+      if (!page.path || !page.html) continue;
+      await upsertPrerenderedPage(env.DB, {
+        path: page.path,
+        html: page.html,
+        title: page.title ?? '',
+        description: page.description ?? '',
+        expires_at: expiresAt,
+      });
+      imported++;
+    }
+
+    return json({ success: true, imported, expires_at: expiresAt });
+  }
+
+  // ── POST: manually push single HTML page into cache ────────────────────────
   if (req.method === 'POST') {
     const data = await req.json<{
       path: string;
