@@ -73,6 +73,10 @@ cp(
   resolve(cliDir, 'assets/templates/cloudflare/worker/wrangler.toml'),
 );
 
+// package.json + tsconfig.json are maintained directly in
+// assets/templates/cloudflare/worker/ (not copied from source,
+// because the source has repo-specific paths like ../../d1-schema.sql)
+
 // CF middleware
 mkdir(resolve(cliDir, 'assets/templates/cloudflare'));
 cp(

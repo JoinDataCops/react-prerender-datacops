@@ -1,3 +1,6 @@
 /node_modules
 cloudflare/cli/node_modules
 cloudflare/workers/backend/node_modules
+
+# Project-local prerender-edge config (contains secrets)
+.prerender-edge.json

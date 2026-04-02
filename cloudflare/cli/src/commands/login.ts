@@ -5,7 +5,7 @@ import open from 'open';
 import { setAuth, getAuth, setSupabaseAuth, getSupabaseAuth, getConfigPath } from '../lib/config.js';
 import { getUser, listAccounts } from '../lib/cf-api.js';
 import { getSbUser } from '../lib/supabase-api.js';
-import { startOAuthFlow, CF_DEFAULT_CLIENT_ID } from '../lib/auth.js';
+import { startOAuthFlow, CF_DEFAULT_CLIENT_ID, buildOAuthUrl } from '../lib/auth.js';
 
 const SB_TOKENS_URL = 'https://app.supabase.com/account/tokens';
 
@@ -128,23 +128,6 @@ async function cfOAuthFlow(clientId: string): Promise<void> {
   const spinner = ora('Opening browser...').start();
 
   try {
-    // Open browser slightly after the local server has started
-    // startOAuthFlow() starts the server then waits for callback
-    setTimeout(async () => {
-      try {
-        await open(
-          `https://dash.cloudflare.com/oauth2/auth?` +
-          `response_type=code` +
-          `&client_id=${clientId}` +
-          `&redirect_uri=http://localhost:8976/oauth/callback` +
-          `&scope=account:read+user:read+workers:edit+workers_scripts:edit+d1:write+pages:edit` +
-          `&code_challenge_method=S256`,
-        );
-      } catch {
-        spinner.text = 'Could not open browser automatically — check the URL above';
-      }
-    }, 300);
-
     spinner.text = 'Waiting for you to approve in the browser...';
 
     const tokens = await startOAuthFlow(clientId);

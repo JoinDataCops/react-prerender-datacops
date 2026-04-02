@@ -104,21 +104,6 @@ async function cfOAuthFlow(clientId) {
         '  create or configure anything manually.\n'));
     const spinner = ora('Opening browser...').start();
     try {
-        // Open browser slightly after the local server has started
-        // startOAuthFlow() starts the server then waits for callback
-        setTimeout(async () => {
-            try {
-                await open(`https://dash.cloudflare.com/oauth2/auth?` +
-                    `response_type=code` +
-                    `&client_id=${clientId}` +
-                    `&redirect_uri=http://localhost:8976/oauth/callback` +
-                    `&scope=account:read+user:read+workers:edit+workers_scripts:edit+d1:write+pages:edit` +
-                    `&code_challenge_method=S256`);
-            }
-            catch {
-                spinner.text = 'Could not open browser automatically — check the URL above';
-            }
-        }, 300);
         spinner.text = 'Waiting for you to approve in the browser...';
         const tokens = await startOAuthFlow(clientId);
         spinner.succeed('Authorized!');

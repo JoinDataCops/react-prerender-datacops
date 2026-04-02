@@ -8,7 +8,13 @@
       "Bash(node dist/index.js --help)",
       "Bash(node dist/index.js prerender --help)",
       "Bash(npm pack:*)",
-      "Bash(node -e \":*)"
+      "Bash(node -e \":*)",
+      "Bash(node -e \"console.log\\(require\\(''./package.json''\\).version\\)\")",
+      "Bash(npm view:*)",
+      "Bash(npm publish:*)",
+      "Bash(npm info:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)"
     ]
   }
 }

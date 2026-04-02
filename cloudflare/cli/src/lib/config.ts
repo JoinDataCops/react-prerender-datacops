@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import Conf from 'conf';
 
 export interface SiteConfig {
@@ -11,8 +13,9 @@ export interface SiteConfig {
   pagesProject: string;
 }
 
-export interface StoredConfig {
-  // ── Cloudflare ────────────────────────────────────────────────
+// ── System-wide config (auth only — shared across all projects) ──────────────
+
+interface SystemConfig {
   auth?: {
     token: string;
     tokenType: 'apiToken' | 'oauth';
@@ -21,6 +24,20 @@ export interface StoredConfig {
     refreshToken?: string;
     expiresAt?: number;
   };
+  supabaseAuth?: {
+    token: string;
+    email?: string;
+  };
+}
+
+const systemConf = new Conf<SystemConfig>({
+  projectName: 'prerender-edge',
+  configName: 'auth',
+});
+
+// ── Project-local config (.prerender-edge.json in project root) ──────────────
+
+interface ProjectLocalConfig {
   project?: {
     name: string;
     siteUrl: string;
@@ -32,14 +49,6 @@ export interface StoredConfig {
     workerSecret?: string;
     workerDir?: string;
   };
-  /** Frontend site deployment config */
-  siteConfig?: SiteConfig;
-
-  // ── Supabase ──────────────────────────────────────────────────
-  supabaseAuth?: {
-    token: string;
-    email?: string;
-  };
   supabaseProject?: {
     ref: string;
     name: string;
@@ -49,53 +58,114 @@ export interface StoredConfig {
     pagesProject?: string;
     siteUrl?: string;
   };
+  siteConfig?: SiteConfig;
 }
 
-const conf = new Conf<StoredConfig>({
-  projectName: 'prerender-edge',
-  configName: 'config',
-});
+const LOCAL_CONFIG_FILE = '.prerender-edge.json';
+
+function findProjectRoot(): string {
+  let dir = process.cwd();
+  // Walk up to find package.json (project root)
+  while (dir !== path.dirname(dir)) {
+    if (fs.existsSync(path.join(dir, 'package.json'))) return dir;
+    dir = path.dirname(dir);
+  }
+  return process.cwd();
+}
+
+function getLocalConfigPath(): string {
+  return path.join(findProjectRoot(), LOCAL_CONFIG_FILE);
+}
+
+function readLocalConfig(): ProjectLocalConfig {
+  const p = getLocalConfigPath();
+  try {
+    if (fs.existsSync(p)) {
+      return JSON.parse(fs.readFileSync(p, 'utf-8'));
+    }
+  } catch {}
+  return {};
+}
+
+function writeLocalConfig(config: ProjectLocalConfig): void {
+  const p = getLocalConfigPath();
+  fs.writeFileSync(p, JSON.stringify(config, null, 2) + '\n', 'utf-8');
+}
+
+// ── Combined StoredConfig type (for backward compatibility) ──────────────────
+
+export interface StoredConfig {
+  auth?: SystemConfig['auth'];
+  project?: ProjectLocalConfig['project'];
+  siteConfig?: SiteConfig;
+  supabaseAuth?: SystemConfig['supabaseAuth'];
+  supabaseProject?: ProjectLocalConfig['supabaseProject'];
+}
+
+// ── Getters & setters ────────────────────────────────────────────────────────
 
 export function getConfig(): StoredConfig {
-  return conf.store;
+  const local = readLocalConfig();
+  return {
+    auth: systemConf.get('auth'),
+    supabaseAuth: systemConf.get('supabaseAuth'),
+    project: local.project,
+    supabaseProject: local.supabaseProject,
+    siteConfig: local.siteConfig,
+  };
 }
 
 export function setConfig(updates: Partial<StoredConfig>): void {
-  for (const [key, value] of Object.entries(updates) as [keyof StoredConfig, unknown][]) {
-    if (value === undefined) {
-      conf.delete(key);
-    } else {
-      conf.set(key, value as StoredConfig[typeof key]);
+  // Auth goes to system-wide store
+  if ('auth' in updates) {
+    if (updates.auth === undefined) systemConf.delete('auth');
+    else systemConf.set('auth', updates.auth);
+  }
+  if ('supabaseAuth' in updates) {
+    if (updates.supabaseAuth === undefined) systemConf.delete('supabaseAuth');
+    else systemConf.set('supabaseAuth', updates.supabaseAuth);
+  }
+
+  // Project config goes to local file
+  const localKeys: (keyof ProjectLocalConfig)[] = ['project', 'supabaseProject', 'siteConfig'];
+  const hasLocalUpdate = localKeys.some((k) => k in updates);
+  if (hasLocalUpdate) {
+    const local = readLocalConfig();
+    for (const key of localKeys) {
+      if (key in updates) {
+        if ((updates as Record<string, unknown>)[key] === undefined) {
+          delete local[key];
+        } else {
+          (local as Record<string, unknown>)[key] = (updates as Record<string, unknown>)[key];
+        }
+      }
     }
+    writeLocalConfig(local);
   }
 }
 
 export function clearConfig(): void {
-  conf.clear();
+  systemConf.clear();
+  const p = getLocalConfigPath();
+  try { fs.unlinkSync(p); } catch {}
 }
 
 export function getConfigPath(): string {
-  return conf.path;
+  return `System: ${systemConf.path}\nProject: ${getLocalConfigPath()}`;
 }
 
-export function getAuth(): StoredConfig['auth'] | undefined {
-  return conf.get('auth');
+// ── Auth (system-wide) ───────────────────────────────────────────────────────
+
+export function getAuth(): SystemConfig['auth'] | undefined {
+  return systemConf.get('auth');
 }
 
-export function setAuth(auth: StoredConfig['auth']): void {
-  conf.set('auth', auth);
+export function setAuth(auth: SystemConfig['auth']): void {
+  systemConf.set('auth', auth);
 }
 
 export function clearAuth(): void {
-  conf.delete('auth');
-}
-
-export function getProject(): StoredConfig['project'] | undefined {
-  return conf.get('project');
-}
-
-export function setProject(project: StoredConfig['project']): void {
-  conf.set('project', project);
+  systemConf.delete('auth');
 }
 
 /** Returns the API token to use for Cloudflare API requests. */
@@ -106,27 +176,45 @@ export function getApiToken(): string | undefined {
   return auth.accessToken ?? auth.token;
 }
 
-// ── Supabase ─────────────────────────────────────────────────────────────────
+// ── Project config (project-local) ───────────────────────────────────────────
 
-export function getSupabaseAuth(): StoredConfig['supabaseAuth'] | undefined {
-  return conf.get('supabaseAuth');
+export function getProject(): ProjectLocalConfig['project'] | undefined {
+  return readLocalConfig().project;
 }
 
-export function setSupabaseAuth(auth: StoredConfig['supabaseAuth']): void {
-  conf.set('supabaseAuth', auth);
+export function setProject(project: ProjectLocalConfig['project']): void {
+  const local = readLocalConfig();
+  local.project = project;
+  writeLocalConfig(local);
+}
+
+// ── Supabase auth (system-wide) ──────────────────────────────────────────────
+
+export function getSupabaseAuth(): SystemConfig['supabaseAuth'] | undefined {
+  return systemConf.get('supabaseAuth');
+}
+
+export function setSupabaseAuth(auth: SystemConfig['supabaseAuth']): void {
+  systemConf.set('supabaseAuth', auth);
 }
 
 export function clearSupabaseAuth(): void {
-  conf.delete('supabaseAuth');
+  systemConf.delete('supabaseAuth');
 }
 
-export function getSupabaseProject(): StoredConfig['supabaseProject'] | undefined {
-  return conf.get('supabaseProject');
+// ── Supabase project (project-local) ─────────────────────────────────────────
+
+export function getSupabaseProject(): ProjectLocalConfig['supabaseProject'] | undefined {
+  return readLocalConfig().supabaseProject;
 }
 
-export function setSupabaseProject(project: StoredConfig['supabaseProject']): void {
-  conf.set('supabaseProject', project);
+export function setSupabaseProject(project: ProjectLocalConfig['supabaseProject']): void {
+  const local = readLocalConfig();
+  local.supabaseProject = project;
+  writeLocalConfig(local);
 }
+
+// ── Login check ──────────────────────────────────────────────────────────────
 
 export function isLoggedIn(): { cloudflare: boolean; supabase: boolean } {
   return {
@@ -135,16 +223,20 @@ export function isLoggedIn(): { cloudflare: boolean; supabase: boolean } {
   };
 }
 
-// ── Site config ───────────────────────────────────────────────────────────────
+// ── Site config (project-local) ──────────────────────────────────────────────
 
-export function getSiteConfig(): StoredConfig['siteConfig'] | undefined {
-  return conf.get('siteConfig');
+export function getSiteConfig(): SiteConfig | undefined {
+  return readLocalConfig().siteConfig;
 }
 
-export function setSiteConfig(cfg: StoredConfig['siteConfig']): void {
-  conf.set('siteConfig', cfg);
+export function setSiteConfig(cfg: SiteConfig): void {
+  const local = readLocalConfig();
+  local.siteConfig = cfg;
+  writeLocalConfig(local);
 }
 
 export function clearSiteConfig(): void {
-  conf.delete('siteConfig');
+  const local = readLocalConfig();
+  delete local.siteConfig;
+  writeLocalConfig(local);
 }

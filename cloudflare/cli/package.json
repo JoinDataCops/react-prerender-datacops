@@ -1,6 +1,6 @@
 {
   "name": "prerender-edge",
-  "version": "1.2.4",
+  "version": "1.2.8",
   "description": "CLI to set up a zero-dependency prerender + sitemaps + script injection stack on Cloudflare (D1 + Workers) or Supabase (Postgres + Edge Functions)",
   "keywords": [
     "prerender",

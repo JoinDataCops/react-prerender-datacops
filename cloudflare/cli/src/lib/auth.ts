@@ -12,6 +12,7 @@
 
 import { createServer } from 'http';
 import { createHash, randomBytes } from 'crypto';
+import open from 'open';
 
 const CF_AUTH_URL = 'https://dash.cloudflare.com/oauth2/auth';
 const CF_TOKEN_URL = 'https://dash.cloudflare.com/oauth2/token';
@@ -28,7 +29,8 @@ const CALLBACK_PORT = 8976; // must match Cloudflare's registered redirect URI
 const CALLBACK_PATH = '/oauth/callback';
 const REDIRECT_URI = `http://localhost:${CALLBACK_PORT}${CALLBACK_PATH}`;
 
-// Scopes must match Cloudflare's OAuth API exactly (same set wrangler uses)
+// Cloudflare OAuth scopes — same as wrangler login uses.
+// These must match what the registered OAuth client (wrangler's client_id) allows.
 const CF_SCOPES = [
   'account:read',
   'user:read',
@@ -36,8 +38,13 @@ const CF_SCOPES = [
   'workers_kv:write',
   'workers_routes:write',
   'workers_scripts:write',
+  'workers_tail:read',
   'd1:write',
   'pages:write',
+  'zone:read',
+  'ssl_certs:write',
+  'ai:write',
+  'queues:write',
   'offline_access',
 ].join(' ');
 
@@ -84,7 +91,11 @@ export async function startOAuthFlow(
   authUrl.searchParams.set('code_challenge', challenge);
   authUrl.searchParams.set('code_challenge_method', 'S256');
 
-  const code = await waitForOAuthCallback(authUrl.toString(), state);
+  // Open browser after a short delay (gives the local callback server time to start)
+  const fullUrl = authUrl.toString();
+  setTimeout(() => { open(fullUrl).catch(() => {}); }, 300);
+
+  const code = await waitForOAuthCallback(fullUrl, state);
   return exchangeCodeForTokens(clientId, code, verifier);
 }
 

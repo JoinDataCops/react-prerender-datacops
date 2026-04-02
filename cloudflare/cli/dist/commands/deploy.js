@@ -6,9 +6,9 @@
  *   - Auto `wrangler login` if auth fails
  *   - Pushes WORKER_SECRET + SITE_URL via wrangler after deploy
  */
-import { spawnSync } from 'child_process';
+import { spawnSync, spawn } from 'child_process';
 import { resolve, join } from 'path';
-import { existsSync } from 'fs';
+import { existsSync, writeFileSync } from 'fs';
 import chalk from 'chalk';
 import ora from 'ora';
 import { confirm } from '@inquirer/prompts';
@@ -38,30 +38,60 @@ export async function deployCommand(opts = {}) {
     }
     console.log(chalk.bold.cyan('\n  Deploying backend worker...\n'));
     console.log(chalk.dim(`  Dir    : ${workerDir}`));
-    // ── 1. npm install if needed ──────────────────────────────────────────────
+    // ── 1. Ensure package.json exists (older scaffolds may not have one) ─────
+    const pkgPath = join(workerDir, 'package.json');
+    if (!existsSync(pkgPath)) {
+        console.log(chalk.dim('  Creating package.json for worker...'));
+        writeFileSync(pkgPath, JSON.stringify({
+            name: 'prerender-worker',
+            private: true,
+            version: '0.0.0',
+            type: 'module',
+            scripts: { dev: 'wrangler dev', deploy: 'wrangler deploy' },
+            devDependencies: {
+                '@cloudflare/workers-types': '^4.20240725.0',
+                typescript: '^5.5.0',
+                wrangler: '^4.0.0',
+            },
+        }, null, 2) + '\n');
+    }
+    // ── 2. npm install if needed ──────────────────────────────────────────────
     if (!existsSync(join(workerDir, 'node_modules'))) {
-        const s = ora('Installing worker dependencies...').start();
+        console.log(chalk.dim('  Installing worker dependencies...\n'));
         // Use --legacy-peer-deps so that peer dep conflicts in the parent
         // project (if the worker dir is nested inside another npm project)
         // do not block the worker's own install.
-        const r = spawnSync('npm', ['install', '--legacy-peer-deps'], {
-            cwd: workerDir, shell: true, encoding: 'utf8', stdio: 'pipe',
+        const installCode = await new Promise((res) => {
+            const child = spawn('npm', ['install', '--legacy-peer-deps'], {
+                cwd: workerDir, shell: true, stdio: ['ignore', 'pipe', 'pipe'],
+            });
+            let stderr = '';
+            child.stdout?.on('data', (d) => {
+                const line = d.toString().trim();
+                if (line)
+                    console.log(chalk.dim(`    ${line}`));
+            });
+            child.stderr?.on('data', (d) => {
+                const line = d.toString().trim();
+                stderr += d.toString();
+                if (line)
+                    console.log(chalk.dim(`    ${line}`));
+            });
+            child.on('close', (code) => {
+                if (code !== 0 && (stderr.includes('ERESOLVE') || stderr.includes('peer'))) {
+                    console.log(chalk.yellow('\n  Peer dependency conflict detected.'));
+                    console.log(chalk.dim('  Run manually inside the worker directory:'));
+                    console.log(chalk.cyan(`    cd "${workerDir}"`));
+                    console.log(chalk.cyan('    npm install --legacy-peer-deps'));
+                }
+                res(code ?? 1);
+            });
         });
-        if (r.status !== 0) {
-            s.fail('npm install failed');
-            console.log(chalk.dim('\n' + (r.stderr || r.stdout)));
-            // If the error is still about peer deps, give a clear manual fix
-            const output = (r.stderr ?? '') + (r.stdout ?? '');
-            if (output.includes('ERESOLVE') || output.includes('peer')) {
-                console.log(chalk.yellow('\n  Peer dependency conflict detected.'));
-                console.log(chalk.dim('  Run manually inside the worker directory:'));
-                console.log(chalk.cyan(`    cd "${workerDir}"`));
-                console.log(chalk.cyan('    npm install --legacy-peer-deps'));
-                console.log(chalk.cyan('    npx wrangler deploy --env='));
-            }
+        if (installCode !== 0) {
+            console.log(chalk.red('\n  ✗ npm install failed'));
             process.exit(1);
         }
-        s.succeed('Dependencies installed');
+        console.log(chalk.green('\n  ✓ Dependencies installed'));
     }
     // ── 2. Find wrangler ──────────────────────────────────────────────────────
     const wranglerBin = findWrangler(workerDir);
@@ -90,8 +120,8 @@ export async function deployCommand(opts = {}) {
 }
 // ── Deploy runner with auto-login ─────────────────────────────────────────────
 async function runDeploy(wranglerBin, workerDir, token, workerName, isRetry = false) {
-    const label = isRetry ? 'Retrying deploy...' : 'Running wrangler deploy...';
-    const s = ora(label).start();
+    const label = isRetry ? '  Retrying deploy...' : '  Running wrangler deploy...';
+    console.log(chalk.dim(label + '\n'));
     // On retry after `wrangler login`, do NOT inject CLOUDFLARE_API_TOKEN —
     // that would override the freshly-stored OAuth session and cause auth errors.
     const deployEnv = isRetry
@@ -107,31 +137,48 @@ async function runDeploy(wranglerBin, workerDir, token, workerName, isRetry = fa
             CLOUDFLARE_API_KEY: '',
             CLOUDFLARE_EMAIL: '',
         };
-    const result = spawnSync(wranglerBin, ['deploy', '--env='], {
-        cwd: workerDir,
-        env: deployEnv,
-        encoding: 'utf8',
-        shell: true,
-        stdio: 'pipe', // capture output so we can detect auth errors
+    // Stream wrangler output in real-time while capturing it for error detection
+    const { exitCode, output } = await new Promise((res) => {
+        let captured = '';
+        const child = spawn(wranglerBin, ['deploy', '--env='], {
+            cwd: workerDir,
+            env: deployEnv,
+            shell: true,
+            stdio: ['ignore', 'pipe', 'pipe'],
+        });
+        child.stdout?.on('data', (d) => {
+            const text = d.toString();
+            captured += text;
+            text.split('\n').filter((l) => l.trim()).forEach((l) => {
+                console.log(chalk.dim(`    ${l}`));
+            });
+        });
+        child.stderr?.on('data', (d) => {
+            const text = d.toString();
+            captured += text;
+            text.split('\n').filter((l) => l.trim()).forEach((l) => {
+                // Warnings in yellow, errors in default dim
+                if (l.includes('WARN') || l.includes('[WARNING]')) {
+                    console.log(chalk.yellow(`    ${l}`));
+                }
+                else {
+                    console.log(chalk.dim(`    ${l}`));
+                }
+            });
+        });
+        child.on('close', (code) => res({ exitCode: code ?? 1, output: captured }));
     });
-    const output = (result.stdout ?? '') + (result.stderr ?? '');
-    if (result.status === 0) {
-        s.succeed('Worker deployed');
+    if (exitCode === 0) {
         // Show the URL wrangler printed
         const urlMatch = output.match(/https:\/\/\S+\.workers\.dev/);
+        console.log(chalk.green('\n  ✓ Worker deployed'));
         if (urlMatch) {
             console.log(chalk.dim(`  URL: ${urlMatch[0]}`));
-        }
-        // Print non-empty non-warning output for visibility
-        const lines = output.split('\n').filter((l) => l.trim() && !l.includes('WARN') && !l.includes('[WARNING]'));
-        if (lines.length > 0 && lines.some((l) => !l.startsWith('>'))) {
-            console.log(chalk.dim('\n  Wrangler output:'));
-            lines.slice(-8).forEach((l) => console.log(chalk.dim(`    ${l.trim()}`)));
         }
         return true;
     }
     // ── Deploy failed ─────────────────────────────────────────────────────────
-    s.fail('Deployment failed');
+    console.log(chalk.red('\n  ✗ Deployment failed'));
     const isAuthError = output.includes('Authentication error') ||
         output.includes('code: 10000') ||
         output.includes('[code: 10000]') ||
@@ -139,12 +186,6 @@ async function runDeploy(wranglerBin, workerDir, token, workerName, isRetry = fa
         output.includes('401');
     const isMultiEnv = output.includes('Multiple environments') ||
         output.includes('no target environment');
-    // Print the actual wrangler error output
-    console.log('\n' + chalk.dim('  Wrangler output:'));
-    output.split('\n')
-        .filter((l) => l.trim())
-        .slice(-20)
-        .forEach((l) => console.log(chalk.dim(`    ${l.trim()}`)));
     // ── Auth error: offer to run wrangler login ───────────────────────────────
     if (isAuthError && !isRetry) {
         console.log(chalk.yellow('\n  Wrangler could not authenticate with your token.\n' +
